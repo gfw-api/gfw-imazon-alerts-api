@@ -1,0 +1,47 @@
+{
+    "id": "#(service.id)",
+    "name": "#(service.name)",
+    "urls": [{
+        "url": "/imazon-alerts/admin/:iso",
+        "method": "GET",
+        "endpoints": [{
+            "method": "GET",
+            "path": "/api/v1/imazon-alerts/admin/:iso"
+        }]
+    }, {
+        "url": "/imazon-alerts/admin/:iso/:id1",
+        "method": "GET",
+        "endpoints": [{
+            "method": "GET",
+            "path": "/api/v1/imazon-alerts/admin/:iso/:id1"
+        }]
+    }, {
+        "url": "/imazon-alerts/use/:name/:id",
+        "method": "GET",
+        "endpoints": [{
+            "method": "GET",
+            "path": "/api/v1/imazon-alerts/use/:name/:id"
+        }]
+    }, {
+        "url": "/imazon-alerts/wdpa/:id",
+        "method": "GET",
+        "endpoints": [{
+            "method": "GET",
+            "path": "/api/v1/imazon-alerts/wdpa/:id"
+        }]
+    }, {
+        "url": "/imazon-alerts",
+        "method": "GET",
+        "endpoints": [{
+            "method": "GET",
+            "path": "/api/v1/imazon-alerts"
+        }]
+    }, {
+        "url": "/imazon-alerts/latest",
+        "method": "GET",
+        "endpoints": [{
+            "method": "GET",
+            "path": "/api/v1/imazon-alerts/latest"
+        }]
+    }]
+}

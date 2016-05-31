@@ -1,0 +1,8 @@
+{
+    "logger": {
+        "name": "gfw-imazon-alerts-api",
+        "level": "info",
+        "toFile": false,
+        "dirLogFile": null
+    }
+}

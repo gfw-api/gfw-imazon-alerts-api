@@ -1,0 +1,11 @@
+develop:
+  extends:
+    file: base.yml
+    service: base
+  container_name: gfw-imazon-alerts-api-develop
+  environment:
+    NODE_ENV: dev
+    CARTODB_USER: wri-01
+  command: develop
+  volumes:
+    - ./app:/opt/gfw-imazon-alerts-api/app
