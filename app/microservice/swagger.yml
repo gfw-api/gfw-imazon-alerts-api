@@ -316,7 +316,7 @@ definitions:
     properties:
       data:
         properties:
-          $schema:
+          schema:
             $ref: '#/definitions/IMAZONLATESTBody'
   IMAZONLATESTBody:
     type: object
@@ -344,7 +344,7 @@ definitions:
     properties:
       data:
         properties:
-          $schema:
+          schema:
             $ref: '#/definitions/IMAZONALERTSBody'
 
   IMAZONALERTSBody:
