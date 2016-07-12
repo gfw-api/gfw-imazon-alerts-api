@@ -116,24 +116,25 @@ class CartoDBService {
     }
 
     getDownloadUrls(query, params) {
-        try{
+        try {
             let formats = ['csv', 'geojson', 'kml', 'shp', 'svg'];
             let download = {};
             let queryFinal = Mustache.render(query, params);
             queryFinal = queryFinal.replace(MIN_MAX_DATE_SQL, '');
             queryFinal = queryFinal.replace('SELECT data_type,', 'SELECT i.data_type, i.the_geom,');
             queryFinal = encodeURIComponent(queryFinal);
-            for(let i=0, length = formats.length; i < length; i++){
+            for (let i = 0, length = formats.length; i < length; i++) {
                 download[formats[i]] = this.apiUrl + '?q=' + queryFinal + '&format=' + formats[i];
             }
             return download;
-        }catch(err){
+        } catch (err) {
             logger.error(err);
         }
     }
 
 
-    * getNational(iso, alertQuery, period = defaultDate()) {
+    *
+    getNational(iso, alertQuery, period = defaultDate()) {
         logger.debug('Obtaining national of iso %s', iso);
         let periods = period.split(',');
         let params = {
@@ -141,19 +142,28 @@ class CartoDBService {
             begin: periods[0],
             end: periods[1]
         };
-        if(alertQuery){
+        if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        let data = yield executeThunk(this.client, ISO, params);
-        if (data.rows ) {
-            let result = {value: data.rows};
-            result.downloadUrls = this.getDownloadUrls(ISO, params);
-            return result;
+        if (iso === 'BRA') {
+            let data = yield executeThunk(this.client, ISO, params);
+            if (data.rows) {
+                let result = {
+                    value: data.rows
+                };
+                result.downloadUrls = this.getDownloadUrls(ISO, params);
+                return result;
+            }
+        } else {
+            return {
+                value: []
+            };
         }
         return null;
     }
 
-    * getSubnational(iso, id1, alertQuery, period = defaultDate()) {
+    *
+    getSubnational(iso, id1, alertQuery, period = defaultDate()) {
         logger.debug('Obtaining subnational of iso %s and id1', iso, id1);
         let periods = period.split(',');
         let params = {
@@ -162,19 +172,28 @@ class CartoDBService {
             begin: periods[0],
             end: periods[1]
         };
-        if(alertQuery){
+        if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        let data = yield executeThunk(this.client, ID1, params);
-        if (data.rows ) {
-            let result = {value: data.rows};
-            result.downloadUrls = this.getDownloadUrls(ISO, params);
-            return result;
+        if (iso === 'BRA') {
+            let data = yield executeThunk(this.client, ID1, params);
+            if (data.rows) {
+                let result = {
+                    value: data.rows
+                };
+                result.downloadUrls = this.getDownloadUrls(ISO, params);
+                return result;
+            }
+        } else {
+            return {
+                value: []
+            };
         }
         return null;
     }
 
-    * getUse(useTable, id, alertQuery, period = defaultDate()) {
+    *
+    getUse(useTable, id, alertQuery, period = defaultDate()) {
         logger.debug('Obtaining use with id %s', id);
         let periods = period.split(',');
         let params = {
@@ -183,20 +202,23 @@ class CartoDBService {
             begin: periods[0],
             end: periods[1]
         };
-        if(alertQuery){
+        if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
         let data = yield executeThunk(this.client, USE, params);
 
-        if (data.rows ) {
-            let result = {value: data.rows};
+        if (data.rows) {
+            let result = {
+                value: data.rows
+            };
             result.downloadUrls = this.getDownloadUrls(ISO, params);
             return result;
         }
         return null;
     }
 
-    * getWdpa(wdpaid, alertQuery, period = defaultDate()) {
+    *
+    getWdpa(wdpaid, alertQuery, period = defaultDate()) {
         logger.debug('Obtaining wpda of id %s', wdpaid);
         let periods = period.split(',');
         let params = {
@@ -204,19 +226,22 @@ class CartoDBService {
             begin: periods[0],
             end: periods[1]
         };
-        if(alertQuery){
+        if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
         let data = yield executeThunk(this.client, WDPA, params);
-        if (data.rows ) {
-            let result = {value: data.rows};
+        if (data.rows) {
+            let result = {
+                value: data.rows
+            };
             result.downloadUrls = this.getDownloadUrls(ISO, params);
             return result;
         }
         return null;
     }
 
-    * getGeostore(hashGeoStore) {
+    *
+    getGeostore(hashGeoStore) {
         logger.debug('Obtaining geostore with hash %s', hashGeoStore);
         let result = yield require('microservice-client').requestToMicroservice({
             uri: '/geostore/' + hashGeoStore,
@@ -231,7 +256,8 @@ class CartoDBService {
         return yield deserializer(result.body);
     }
 
-    * getWorld(hashGeoStore, alertQuery, period = defaultDate()) {
+    *
+    getWorld(hashGeoStore, alertQuery, period = defaultDate()) {
         logger.debug('Obtaining world with hashGeoStore %s', hashGeoStore);
 
         let geostore = yield this.getGeostore(hashGeoStore);
@@ -243,12 +269,14 @@ class CartoDBService {
                 begin: periods[0],
                 end: periods[1]
             };
-            if(alertQuery){
+            if (alertQuery) {
                 params.additionalSelect = MIN_MAX_DATE_SQL;
             }
             let data = yield executeThunk(this.client, WORLD, params);
-            if (data.rows ) {
-                let result = {value: data.rows};
+            if (data.rows) {
+                let result = {
+                    value: data.rows
+                };
                 result.downloadUrls = this.getDownloadUrls(ISO, params);
                 return result;
             }
@@ -257,14 +285,15 @@ class CartoDBService {
         throw new NotFound('Geostore not found');
     }
 
-    * latest(limit=3) {
+    *
+    latest(limit = 3) {
         logger.debug('Obtaining latest with limit %s', limit);
         let params = {
             limit: limit
         };
         let data = yield executeThunk(this.client, LATEST, params);
         logger.debug('data', data);
-        if (data.rows ) {
+        if (data.rows) {
             let result = data.rows;
             return result;
         }
