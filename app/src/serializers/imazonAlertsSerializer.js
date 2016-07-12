@@ -12,7 +12,8 @@ var imazonAlertsSerializer = new JSONAPISerializer('imazon-alerts', {
     },
     value: {
         attributes: ['data_type', 'value', 'min_date', 'max_date']
-    }
+    },
+    keyForAttribute: 'camelCase'
 });
 var imazonLatestSerializer = new JSONAPISerializer('imazon-latest', {
     attributes: ['date'],
