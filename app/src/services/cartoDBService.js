@@ -122,6 +122,7 @@ class CartoDBService {
             let queryFinal = Mustache.render(query, params);
             queryFinal = queryFinal.replace(MIN_MAX_DATE_SQL, '');
             queryFinal = queryFinal.replace('SELECT data_type,', 'SELECT i.data_type, i.the_geom,');
+            queryFinal = queryFinal.replace('GROUP BY data_type', 'GROUP BY data_type, i.the_geom');
             queryFinal = encodeURIComponent(queryFinal);
             for (let i = 0, length = formats.length; i < length; i++) {
                 download[formats[i]] = this.apiUrl + '?q=' + queryFinal + '&format=' + formats[i];
