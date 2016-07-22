@@ -3,7 +3,7 @@
 var logger = require('logger');
 var JSONAPISerializer = require('jsonapi-serializer').Serializer;
 var imazonAlertsSerializer = new JSONAPISerializer('imazon-alerts', {
-    attributes: ['value','downloadUrls'],
+    attributes: ['value','downloadUrls', 'area_ha'],
     typeForAttribute: function (attribute, record) {
         return attribute;
     },

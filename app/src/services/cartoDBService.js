@@ -17,51 +17,53 @@ const WORLD = `WITH poly AS (SELECT * FROM ST_SetSRID(ST_GeomFromGeoJSON('{{{geo
         GROUP BY data_type `;
 
 const ISO = `SELECT data_type,
-            sum(ST_Area(i.the_geom_webmercator)/(100*100)) AS value
+            sum(ST_Area(i.the_geom_webmercator)/(100*100)) AS value, 851600000 as area_ha
             {{additionalSelect}}
         FROM imazon_sad i
         WHERE i.date >= '{{begin}}'::date
             AND i.date <= '{{end}}'::date
         GROUP BY data_type `;
 
-const ID1 = `SELECT data_type,
-            SUM(ST_Area(ST_Intersection(
-                i.the_geom_webmercator,
-                p.the_geom_webmercator))/(100*100)) AS value
-            {{additionalSelect}}
-        FROM imazon_sad i,
-            (SELECT *
-                FROM gadm2_provinces_simple
-                WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}}) as p
-        WHERE i.date >= '{{begin}}'::date
-            AND i.date <= '{{end}}'::date
-        GROUP BY data_type `;
+const ID1 = `with p as (SELECT the_geom_webmercator, (ST_Area(geography(the_geom))/10000) as area_ha FROM gadm2_provinces_simple WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}})
+        SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value, area_ha
+        FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
+        and i.date >= '{{begin}}'::date
+        AND i.date <= '{{end}}'::date
+        GROUP BY data_type, area_ha`;
 
-const USE = `SELECT data_type,
-            SUM(ST_Area(ST_Intersection(
+const USE = `SELECT data_type, SUM(ST_Area(ST_Intersection(
                 i.the_geom_webmercator,
-                p.the_geom_webmercator))/(100*100)) AS value
-            {{additionalSelect}}
-        FROM {{useTable}} p, imazon_sad i
-        WHERE p.cartodb_id = {{pid}}
+                p.the_geom_webmercator))/(10000)) AS value, area_ha
+               {{additionalSelect}}
+        FROM {{useTable}} p left join imazon_sad i
+            on ST_Intersects(
+                i.the_geom_webmercator,
+                p.the_geom_webmercator)
             AND i.date >= '{{begin}}'::date
             AND i.date <= '{{end}}'::date
-        GROUP BY data_type `;
+            where p.cartodb_id = {{pid}}
+        GROUP BY data_type, area_ha `;
 
-const WDPA = `SELECT data_type,
-            SUM(ST_Area(ST_Intersection(
-                i.the_geom_webmercator,
-                p.the_geom_webmercator))/(100*100)) AS value
+const WDPA = `WITH  p as ( SELECT
+            CASE WHEN marine::numeric = 2
+             THEN null
+            WHEN ST_NPoints(the_geom_webmercator)<=18000 THEN the_geom_webmercator
+            WHEN ST_NPoints(the_geom_webmercator)
+            BETWEEN 18000 AND 50000
+            THEN ST_RemoveRepeatedPoints(the_geom_webmercator, 100)
+            ELSE ST_RemoveRepeatedPoints(the_geom_webmercator, 1000)
+            END as the_geom_webmercator, gis_area*100 as area_ha FROM wdpa_protected_areas where wdpaid={{wdpaid}})
+            SELECT data_type, SUM(ST_Area(ST_Intersection(
+                            i.the_geom_webmercator,
+                            p.the_geom_webmercator))/(10000)) AS value, area_ha
             {{additionalSelect}}
-        FROM (SELECT CASE when marine::numeric = 2 then null
-        when ST_NPoints(the_geom_webmercator)<=18000 THEN the_geom_webmercator
-       WHEN ST_NPoints(the_geom_webmercator) BETWEEN 18000 AND 50000 THEN ST_RemoveRepeatedPoints(the_geom_webmercator, 100)
-      ELSE ST_RemoveRepeatedPoints(the_geom_webmercator, 1000)
-       END as the_geom_webmercator FROM wdpa_protected_areas where wdpaid={{wdpaid}}) p,
-            imazon_sad i
-        WHERE i.date >= '{{begin}}'::date
-            AND i.date <= '{{end}}'::date
-        GROUP BY data_type  `;
+            FROM p
+            left join imazon_sad i
+            on st_intersects(i.the_geom_webmercator,
+                            p.the_geom_webmercator)
+            and i.date >= '{{begin}}'::date
+                        AND i.date <= '{{end}}'::date
+            GROUP BY data_type, area_ha`;
 
 const LATEST = `SELECT DISTINCT date
         FROM imazon_sad
@@ -84,7 +86,7 @@ var executeThunk = function(client, sql, params) {
 
 var deserializer = function(obj) {
     return function(callback) {
-        new JSONAPIDeserializer().deserialize(obj, callback);
+        new JSONAPIDeserializer({keyForAttribute: 'camelCase'}).deserialize(obj, callback);
     };
 };
 
@@ -122,6 +124,7 @@ class CartoDBService {
             let queryFinal = Mustache.render(query, params);
             queryFinal = queryFinal.replace(MIN_MAX_DATE_SQL, '');
             queryFinal = queryFinal.replace('SELECT data_type,', 'SELECT i.data_type, i.the_geom,');
+            queryFinal = queryFinal.replace('GROUP BY data_type', 'GROUP BY data_type, i.the_geom');
             queryFinal = encodeURIComponent(queryFinal);
             for (let i = 0, length = formats.length; i < length; i++) {
                 download[formats[i]] = this.apiUrl + '?q=' + queryFinal + '&format=' + formats[i];
@@ -151,6 +154,9 @@ class CartoDBService {
                 let result = {
                     value: data.rows
                 };
+                if(data.rows.length > 0){
+                    result.area_ha = data.rows[0].area_ha;
+                }
                 result.downloadUrls = this.getDownloadUrls(ISO, params);
                 return result;
             }
@@ -181,6 +187,9 @@ class CartoDBService {
                 let result = {
                     value: data.rows
                 };
+                if(data.rows.length > 0){
+                    result.area_ha = data.rows[0].area_ha;
+                }
                 result.downloadUrls = this.getDownloadUrls(ISO, params);
                 return result;
             }
@@ -211,6 +220,9 @@ class CartoDBService {
             let result = {
                 value: data.rows
             };
+            if(data.rows.length > 0){
+                result.area_ha = data.rows[0].area_ha;
+            }
             result.downloadUrls = this.getDownloadUrls(ISO, params);
             return result;
         }
@@ -234,6 +246,9 @@ class CartoDBService {
             let result = {
                 value: data.rows
             };
+            if(data.rows.length > 0){
+                result.area_ha = data.rows[0].area_ha;
+            }
             result.downloadUrls = this.getDownloadUrls(ISO, params);
             return result;
         }
@@ -275,7 +290,8 @@ class CartoDBService {
             let data = yield executeThunk(this.client, WORLD, params);
             if (data.rows) {
                 let result = {
-                    value: data.rows
+                    value: data.rows,
+                    area_ha: geostore.areaHa
                 };
                 result.downloadUrls = this.getDownloadUrls(ISO, params);
                 return result;
