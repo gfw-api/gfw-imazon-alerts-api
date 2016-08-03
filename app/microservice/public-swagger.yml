@@ -1,7 +1,19 @@
 swagger: '2.0'
 info:
-  title: GFW Terrai Alerts API
-  description: Global Forest Watch - Terrai Alerts API. Deforestation alert system that monitors forest cover loss and forest degradation in the Brazilian Amazon
+  title: GFW Imazon Alerts API
+  description: |
+    ## Global Forest Watch - Imazon Alerts API
+
+    Deforestation alert system that monitors forest cover loss and forest degradation in the Brazilian Amazon
+
+    | Property | Value |
+    | --- | --- | --- |
+    | Coverage | Brazilian Amazon |
+    | Resolution | 250 x 250 meters (MODIS, validated with Landsat and CBERS) |
+    | Source | Imazon |
+    | Timescale | January 2007-present |
+    | Units | Hectares |
+    | Updates | Monthly |
   version: "1.0.0"
 host: example.vizzuality.com
 
