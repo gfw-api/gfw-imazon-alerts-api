@@ -7,7 +7,7 @@ var Mustache = require('mustache');
 var NotFound = require('errors/notFound');
 var JSONAPIDeserializer = require('jsonapi-serializer').Deserializer;
 
-const WORLD = `WITH poly AS (SELECT * FROM ST_SimplifyPreserveTopology(ST_SetSRID(ST_makevalid(ST_GeomFromGeoJSON('{{{geojson}}}')), 4326), 0.01) geojson)
+const WORLD = `WITH poly AS (SELECT * FROM ST_SimplifyPreserveTopology(ST_SetSRID(ST_MakeValid(ST_GeomFromGeoJSON('{{{geojson}}}')), 4326), 0.01) geojson)
         SELECT data_type,
             SUM(ST_Area(ST_Intersection(ST_Transform(poly.geojson, 3857), i.the_geom_webmercator))/(100*100)) AS value
             {{additionalSelect}}
