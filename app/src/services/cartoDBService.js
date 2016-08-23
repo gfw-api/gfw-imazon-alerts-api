@@ -9,10 +9,10 @@ var JSONAPIDeserializer = require('jsonapi-serializer').Deserializer;
 
 const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopology(ST_SetSRID(ST_MakeValid(ST_GeomFromGeoJSON('{{{geojson}}}')), 4326), 0.01), 3857) geojson)
              SELECT data_type,
-               sum( st_area(st_makevalid(ST_Intersection(poly.geojson, i.the_geom_webmercator)))) AS data
+               sum( st_area(st_makevalid(ST_Intersection(poly.geojson, i.the_geom_webmercator)))) AS value
              FROM imazon_sad i, poly        WHERE i.date >= '{{begin}}'::date
                AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type `;
-        
+
 
 const ISO = `SELECT data_type,
             sum(ST_Area(i.the_geom_webmercator)/(100*100)) AS value, 851600000 as area_ha
