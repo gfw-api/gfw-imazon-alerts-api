@@ -27,6 +27,7 @@ app.use(function*(next) {
     try {
         yield next;
     } catch (err) {
+        logger.error(err);
         this.status = err.status || 500;
         this.body = ErrorSerializer.serializeError(this.status, err.message);
         if (process.env.NODE_ENV === 'prod' && this.status === 500) {
