@@ -1,7 +1,7 @@
 FROM node:6.2
 MAINTAINER raul.requero@vizzuality.com
 
-RUN npm install -g grunt-cli bunyan
+RUN npm install -g grunt-cli bunyan pm2
 ENV NAME gfw-imazon-alerts-api
 ENV USER microservice
 
