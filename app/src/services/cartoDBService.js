@@ -75,7 +75,7 @@ const MIN_MAX_DATE_SQL = ', MIN(date) as min_date, MAX(date) as max_date ';
 
 var executeThunk = function(client, sql, params) {
     return function(callback) {
-        logger.debug(Mustache.render(sql, params));
+        logger.info(Mustache.render(sql, params));
         client.execute(sql, params).done(function(data) {
             callback(null, data);
         }).error(function(err) {
