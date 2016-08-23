@@ -3,7 +3,7 @@ MAINTAINER raul.requero@vizzuality.com
 
 RUN npm install -g grunt-cli bunyan pm2
 ENV NAME gfw-imazon-alerts-api
-# ENV USER microservice
+ENV USER microservice
 
 RUN groupadd -r $USER && useradd -r -g $USER $USER
 
