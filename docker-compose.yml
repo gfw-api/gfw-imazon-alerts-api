@@ -1,5 +1,5 @@
 prod:
-  image: vizzuality/gfw-imazon-alerts-api${STAGING}
+  image: vizzuality/gfw-imazon-alerts-api:1.0.1${STAGING}
   ports:
     - "3600"
   env_file:
