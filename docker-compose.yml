@@ -1,5 +1,5 @@
 prod:
-  image: vizzuality/gfw-imazon-alerts-api${STAGING}
+  image: vizzuality/gfw-imazon-alerts-api:1.1.0${STAGING}
   ports:
     - "3600"
   env_file:
@@ -9,4 +9,4 @@ prod:
   log_driver: "syslog"
   log_opt:
     syslog-address: ${SYSLOG_ADDRESS}
-    tag: gfw-imazon-alerts${STAGING}
+    tag: gfw-imazon-alerts-api${STAGING}
