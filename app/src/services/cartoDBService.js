@@ -9,18 +9,20 @@ var JSONAPIDeserializer = require('jsonapi-serializer').Deserializer;
 
 const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopology(ST_SetSRID(ST_MakeValid(ST_GeomFromGeoJSON('{{{geojson}}}')), 4326), 0.01), 3857) geojson)
              SELECT data_type,
-               (sum( st_area(st_makevalid(ST_Intersection(poly.geojson, i.the_geom_webmercator)))) / (100 * 100)) AS value
-             FROM imazon_sad i, poly        WHERE i.date >= '{{begin}}'::date
-               AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type `;
+               (sum( st_area(st_makevalid(ST_Intersection(poly.geojson, i.the_geom_webmercator)))) / (100 * 100)) AS value, (ST_Area(poly.geojson)/10000) as area_ha 
+             FROM imazon_sad i, poly       WHERE i.date >= '{{begin}}'::date
+               AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type, area_ha `;
 
 
-const ISO = `SELECT data_type,
-            sum(ST_Area(i.the_geom_webmercator)/(100*100)) AS value, 851600000 as area_ha
+const ISO = `
+        with p as (SELECT the_geom_webmercator, (ST_Area(geography(the_geom))/10000) as area_ha FROM gadm2_countries_simple WHERE iso = UPPER('{{iso}}'))
+        SELECT data_type,
+            sum(ST_Area(i.the_geom_webmercator)/(100*100)) AS value,  area_ha
             {{additionalSelect}}
-        FROM imazon_sad i
+        FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
         WHERE i.date >= '{{begin}}'::date
             AND i.date <= '{{end}}'::date
-        GROUP BY data_type `;
+        GROUP BY data_type,  area_ha `;
 
 const ID1 = `with p as (SELECT the_geom_webmercator, (ST_Area(geography(the_geom))/10000) as area_ha FROM gadm2_provinces_simple WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}})
         SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value, area_ha
@@ -275,30 +277,35 @@ class CartoDBService {
 
         let geostore = yield this.getGeostore(hashGeoStore);
         if (geostore && geostore.geojson) {
-            logger.debug('Executing query in cartodb with geostore', geostore);
-            let periods = period.split(',');
-            let params = {
-                geojson: JSON.stringify(geostore.geojson.features[0].geometry),
-                begin: periods[0],
-                end: periods[1]
-            };
-            if (alertQuery) {
-                params.additionalSelect = MIN_MAX_DATE_SQL;
-            }
-            let data = yield executeThunk(this.client, WORLD, params);
-            if (data.rows) {
-                let result = {
-                    value: data.rows,
-                    area_ha: geostore.areaHa
-                };
-                result.downloadUrls = this.getDownloadUrls(ISO, params);
-                return result;
-            }
-            return null;
+            return CartoDBService.getWorldWithGeojson(geostore.geojson, alertQuery, period);
         }
         throw new NotFound('Geostore not found');
     }
 
+    * getWorldWithGeojson(geojson, alertQuery, period = defaultDate()) {
+        logger.debug('Executing query in cartodb with geojson', geojson);
+        let periods = period.split(',');
+        let params = {
+            geojson: JSON.stringify(geojson.features[0].geometry),
+            begin: periods[0],
+            end: periods[1]
+        };
+        if (alertQuery) {
+            params.additionalSelect = MIN_MAX_DATE_SQL;
+        }
+        let data = yield executeThunk(this.client, WORLD, params);
+        if (data.rows) {
+            let result = {
+                value: data.rows
+            };
+            if(data.rows.length > 0){
+                result.area_ha = data.rows[0].area_ha;
+            }
+            result.downloadUrls = this.getDownloadUrls(ISO, params);
+            return result;
+        }
+        return null;
+    }
     *
     latest(limit = 3) {
         logger.debug('Obtaining latest with limit %s', limit);

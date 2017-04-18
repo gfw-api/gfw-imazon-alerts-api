@@ -74,6 +74,42 @@ class ImazonAlertsRouter {
         }
 
     }
+
+    static checkGeojson(geojson) {
+        if (geojson.type.toLowerCase() === 'polygon'){
+            return {
+                type: 'FeatureCollection',
+                features: [{
+                    type: 'Feature',
+                    geometry: geojson
+                }]
+            };
+        } else if (geojson.type.toLowerCase() === 'feature') {
+            return {
+                type: 'FeatureCollection',
+                features: [geojson]
+            };
+        } 
+        return geojson;
+    }
+
+    static * worldWithGeojson() {
+        logger.info('Obtaining world data with geostore');
+        this.assert(this.request.body.geojson, 400, 'GeoJSON param required');
+        try{            
+            let data = yield CartoDBService.getWorldWithGeojson(ImazonAlertsRouter.checkGeojson(this.request.body.geojson), this.query.alertQuery, this.query.period);
+
+            this.body = ImazonAlertsSerializer.serialize(data);
+        } catch(err){
+            if(err instanceof NotFound){
+                this.throw(404, 'Geostore not found');
+                return;
+            }
+            throw err;
+        }
+
+    }
+
     static * latest() {
         logger.info('Obtaining latest data');
         try{
@@ -106,6 +142,7 @@ router.get('/admin/:iso/:id1', isCached, ImazonAlertsRouter.getSubnational);
 router.get('/use/:name/:id', isCached, ImazonAlertsRouter.use);
 router.get('/wdpa/:id', isCached, ImazonAlertsRouter.wdpa);
 router.get('/', isCached, ImazonAlertsRouter.world);
+router.post('/', ImazonAlertsRouter.worldWithGeojson);
 router.get('/latest', isCached, ImazonAlertsRouter.latest);
 
 
