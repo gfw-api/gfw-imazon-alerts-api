@@ -7,16 +7,13 @@ var Mustache = require('mustache');
 var NotFound = require('errors/notFound');
 var JSONAPIDeserializer = require('jsonapi-serializer').Deserializer;
 
-const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopology(ST_SetSRID(ST_MakeValid(ST_GeomFromGeoJSON('{{{geojson}}}')), 4326), 0.01), 3857) geojson),
-            p as (select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON('{{{geojson}}}'), 4326), TRUE)/1000 as area_ha),
-            c as (
+const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopology(ST_SetSRID(ST_MakeValid(ST_GeomFromGeoJSON('{{{geojson}}}')), 4326), 0.01), 3857) geojson)
              SELECT data_type,
                (sum( st_area(st_makevalid(ST_Intersection(poly.geojson, i.the_geom_webmercator)))) / (100 * 100)) AS value
-             FROM imazon_sad i, poly       WHERE i.date >= '{{begin}}'::date
-               AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type)
-               SELECT  c.data_type, c.value, p.area_ha
-                FROM c, p `;
+             FROM imazon_sad i, poly        WHERE i.date >= '{{begin}}'::date
+               AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type `;
 
+const AREA = `select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON('{{{geojson}}}'), 4326), TRUE)/1000 as area_ha`;
 
 const ISO = `
         with p as (SELECT the_geom_webmercator, (ST_Area(geography(the_geom))/10000) as area_ha FROM gadm2_countries_simple WHERE iso = UPPER('{{iso}}'))
@@ -281,7 +278,27 @@ class CartoDBService {
 
         let geostore = yield this.getGeostore(hashGeoStore);
         if (geostore && geostore.geojson) {
-            return yield this.getWorldWithGeojson(geostore.geojson, alertQuery, period);
+            logger.debug('Executing query in cartodb with geojson', geostore.geojson);
+            let periods = period.split(',');
+            let params = {
+                geojson: JSON.stringify(geostore.geojson.features[0].geometry),
+                begin: periods[0],
+                end: periods[1]
+            };
+            if (alertQuery) {
+                params.additionalSelect = MIN_MAX_DATE_SQL;
+            }
+            let data = yield executeThunk(this.client, WORLD, params);
+            if (data.rows) {
+                let result = {
+                    value: data.rows
+                };
+                result.area_ha = geostore.area_ha;
+                
+                result.downloadUrls = this.getDownloadUrls(ISO, params);
+                return result;
+            }
+            return null;
         }
         throw new NotFound('Geostore not found');
     }
@@ -298,12 +315,14 @@ class CartoDBService {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
         let data = yield executeThunk(this.client, WORLD, params);
+        let dataArea = yield executeThunk(this.client, AREA, params);
+
         if (data.rows) {
             let result = {
                 value: data.rows
             };
-            if(data.rows.length > 0){
-                result.area_ha = data.rows[0].area_ha;
+            if(dataArea.rows.length > 0){
+                result.area_ha = dataArea.rows[0].area_ha;
             }
             result.downloadUrls = this.getDownloadUrls(ISO, params);
             return result;
