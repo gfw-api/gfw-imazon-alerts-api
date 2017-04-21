@@ -1,59 +1,204 @@
 swagger: '2.0'
+###############################################################################
+#                              API Information                                 
+###############################################################################
 info:
-  title: GFW Imazon Alerts API
+  title: GLobal Forest Watch API
   description: |
-    ## Global Forest Watch - Imazon Alerts API
-
+    The Global Forest Watch API is currently in beta. Based on feedback from trusted testers, this document specifies new API changes that are currently under development. Interested in being a trusted tester? Contact the [Data Lab](mailTo:support@wri.com) at World Resources Institute.
+    
+    All endpoints are accessible via http & https and are located at
+    `https://production-api.globalforestwatch.org`.
+    
+    Forest change measures tree cover loss, tree cover gain, or forest disturbance. The following forest change data are available through the API: 
+    * University of Maryland tree cover loss & gain 
+    * FORMA alerts
+    * IMAZON SAD alerts
+    * Terrai alerts
+    * Prodes
+    * Guira Loss
+    * Biomass loss
+    * GLAD tree cover loss alerts 
+    * NASA VIIRs active fires.
+    
+    Other services provided by the Api complements the ecosystem that surrounds the platform:
+    
+    * Metadata
+    * Urthecast 
+    * Geostore
+    * OGR 
+    * Story 
+    * User 
+    * subscription
+    
+  
+    ### Forest Change - Imazon Alerts API
     Deforestation alert system that monitors forest cover loss and forest degradation in the Brazilian Amazon
-
+    
     | Property | Value |
     | --- | --- | --- |
     | Coverage | Brazilian Amazon |
     | Resolution | 250 x 250 meters (MODIS, validated with Landsat and CBERS) |
-    | Source | Imazon |
     | Timescale | January 2007-present |
     | Units | Hectares |
     | Updates | Monthly |
+    |Source| [Imazon](http://imazon.org.br/?lang=en)|
+  termsOfService: http://www.globalforestwatch.org/terms
+  contact:
+    name: API Support
+    url: http://www.globalforestwatch.org
+    email: support@wri.com
+  license:
+    name: MIT License (MIT)
+    url: https://opensource.org/licenses/MIT
   version: "1.0.0"
-host: example.vizzuality.com
+  
+host: staging-api.globalforestwatch.org
 
 schemes:
   - https
   - http
 
+consumes:
+  - application/vnd.api+json
+
 produces:
   - application/vnd.api+json
 
-# will be prefixed to all paths
 basePath: /api/v1
-
+###############################################################################
+#                                  Security                                    
+###############################################################################
+#securityDefinitions:
+#  UserSecurity:
+#    type: apiKey
+#   in: header
+#    name: Authorization
+#    description: For write operations we need to provide a token like  ```Bearer {{TOKEN}}```
+#security:
+#        - UserSecurity: []
+###############################################################################
+#                                  Paths                                   
+###############################################################################
 paths:
   /imazon-alerts:
     get:
+      description: |
+        Retrives total number of alerts for your custom geometry on the period selected
       operationId: world
+      consumes:
+        - application/vnd.api+json
       produces:
         - application/vnd.api+json
+        - application/json
       tags:
         - IMAZON
       parameters:
         - name: geostore
           in: query
-          description: Hash of the geostore
+          description: |
+            Geostore hash 
+            ```34cecd4c4809dbbec20ce40be3d1c877```
           required: true
           type: string
         - name: period
           in: query
-          description: Period of time (default last day)
+          description: |
+            Period of time 
+            ```2015-01-01,2016-12-01```
           required: true
           type: string
-        - name: alertQuery
-          in: query
-          description: Add minimun date and maximun date to the result
-          required: false
-          type: boolean
+
       responses:
         200:
-          description: Results obtained
+          description: Results obteined
+          examples:
+              data: 
+                type: imazon-alerts
+                id: f123fswse13
+                attributes:
+                  value: []
+                  areaHa: 10472.639768453402
+                  downloadUrls:
+                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
+          schema:
+            $ref: '#/definitions/IMAZONALERTSAPI'
+        404:
+          description: Geostore not found
+          schema:
+            $ref: '#/definitions/Errors'
+        500:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Errors'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Errors'
+    post:
+      description: |
+        Retrives total number of alerts for your custom geometry on the period selected
+      operationId: worldWithGeojson
+      consumes:
+        - application/vnd.api+json
+      produces:
+        - application/vnd.api+json
+        - application/json
+      tags:
+        - IMAZON
+      parameters:
+        - name: geojson
+          in: body
+          description: |
+            ##### examples
+              ```json
+              {
+                  "geojson": {
+                      "type": "FeatureCollection",
+                      "features": [{
+                          "type": "Feature",
+                          "properties": {},
+                          "geometry": {
+                              "type": "Polygon",
+                              "coordinates": [
+                                  [
+                                      [-5.273512601852417, 42.81137220349083],
+                                      [-5.273512601852417, 42.811803118457306],
+                                      [-5.272732079029083, 42.811803118457306],
+                                      [-5.272732079029083, 42.81137220349083],
+                                      [-5.273512601852417, 42.81137220349083]
+                                  ]
+                              ]
+                          }
+                      }]
+                  }
+              }
+              ```
+          required: true
+          schema:
+            $ref: '#/definitions/GeoJsonBodyRequest'
+        - name: period
+          in: query
+          description: |
+            Period of time 
+            ```2015-01-01,2016-12-01```
+          required: true
+          type: string
+
+      responses:
+        200:
+          description: Results obteined
+          examples:
+              data: 
+                type: imazon-alerts
+                id: f123fswse13
+                attributes:
+                  value: []
+                  areaHa: 10472.639768453402
+                  downloadUrls:
+                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
           schema:
             $ref: '#/definitions/IMAZONALERTSAPI'
         404:
@@ -72,6 +217,8 @@ paths:
   /imazon-alerts/use/{name}/{id}:
     get:
       operationId: use
+      description: |
+        Retrives total number of alerts for your selected concession geometry on the period selected
       produces:
         - application/vnd.api+json
       tags:
@@ -79,27 +226,38 @@ paths:
       parameters:
         - name: name
           in: path
-          description: Analisys name (['mining', 'oilpalm', 'fiber', 'logging'])
+          description: |
+            Concession type, one of  
+            ```mining, oilpalm, fiber, logging```
           required: true
           type: string
         - name: id
           in: path
-          description: cartodbid
+          description: |
+            Concession geometry id
+            ``` 100 ```
           required: true
           type: integer
         - name: period
           in: query
-          description: Period of time (default last day)
+          description: |
+            Period of time 
+            ```2015-01-01,2016-12-01```
           required: true
           type: string
-        - name: alertQuery
-          in: query
-          description: Add minimun date and maximun date to the result
-          required: false
-          type: boolean
       responses:
         200:
           description: Results obtained
+          examples:
+              data: 
+                type: imazon-alerts
+                id: f123fswse13
+                attributes:
+                  value: 988
+                  areaHa: 10472.639768453402
+                  downloadUrls:
+                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
           schema:
             $ref: '#/definitions/IMAZONALERTSAPI'
         404:
@@ -118,6 +276,8 @@ paths:
   /imazon-alerts/wdpa/{id}:
     get:
       operationId: wdpa
+      description: |
+        Retrives total number of alerts for your selected protected area on the period selected
       produces:
         - application/vnd.api+json
       tags:
@@ -125,22 +285,32 @@ paths:
       parameters:
         - name: id
           in: path
-          description: wdpa id
+          description: |
+            wdpa id
+            ``` 56670 ```
           required: true
           type: integer
         - name: period
           in: query
-          description: Period of time (default last day)
+          description: |
+            Period of time 
+            ```2015-01-01,2016-12-01```
           required: true
           type: string
-        - name: alertQuery
-          in: query
-          description: Add minimun date and maximun date to the result
-          required: false
-          type: boolean
+
       responses:
         200:
           description: Results obtained
+          examples:
+              data: 
+                type: imazon-alerts
+                id: f123fswse13
+                attributes:
+                  value: 988
+                  areaHa: 10472.639768453402
+                  downloadUrls:
+                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
           schema:
             $ref: '#/definitions/IMAZONALERTSAPI'
         404:
@@ -159,6 +329,8 @@ paths:
   /imazon-alerts/admin/{iso}:
     get:
       operationId: getNational
+      description: |
+        Retrives total number of alerts for your selected country on the period selected
       produces:
         - application/vnd.api+json
       tags:
@@ -166,22 +338,32 @@ paths:
       parameters:
         - name: iso
           in: path
-          description: ISO code
+          description: |
+            ISO-3 country code 
+            ``` BRA ```
           required: true
           type: string
         - name: period
           in: query
-          description: Period of time (default last day)
+          description: |
+            Period of time 
+            ```2015-01-01,2016-12-01```
           required: true
           type: string
-        - name: alertQuery
-          in: query
-          description: Add minimun date and maximun date to the result
-          required: false
-          type: boolean
+
       responses:
         200:
           description: Results obtained
+          examples:
+              data: 
+                type: imazon-alerts
+                id: f123fswse13
+                attributes:
+                  value: 988
+                  areaHa: 10472.639768453402
+                  downloadUrls:
+                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
           schema:
             $ref: '#/definitions/IMAZONALERTSAPI'
         404:
@@ -200,6 +382,8 @@ paths:
   /imazon-alerts/admin/{iso}/{id1}:
     get:
       operationId: getSubnational
+      description: |
+        Retrives total number of alerts for your selected admin 1 area based on GADM 2 on the period selected
       produces:
         - application/vnd.api+json
       tags:
@@ -207,24 +391,26 @@ paths:
       parameters:
         - name: iso
           in: path
-          description: ISO code
+          description: |
+            ISO-3 country code 
+            ``` BRA ```
           required: true
           type: string
         - name: id1
           in: path
-          description: Region code
+          description: |
+            numeric code for admin 1 region code based on GADM 2 
+            ``` 2 ```
           required: true
           type: integer
         - name: period
           in: query
-          description: Period of time (default last day)
+          description: |
+            Period of time 
+            ```2015-01-01,2016-12-01```
           required: true
           type: string
-        - name: alertQuery
-          in: query
-          description: Add minimun date and maximun date to the result
-          required: false
-          type: boolean
+
       responses:
         200:
           description: Results obtained
@@ -242,10 +428,12 @@ paths:
           description: unexpected error
           schema:
             $ref: '#/definitions/Errors'
-
+            
   /imazon-alerts/latest:
     get:
       operationId: getLatest
+      description: |
+        Retrives latest alerts
       produces:
         - application/vnd.api+json
       tags:
@@ -272,7 +460,6 @@ paths:
           description: unexpected error
           schema:
             $ref: '#/definitions/Errors'
-
 
 definitions:
   Errors:
@@ -323,6 +510,10 @@ definitions:
       meta:
         type: object
         description: A meta object containing non-standard meta-information about the error.
+#############################################################################
+#                            Models                                
+#############################################################################
+
   IMAZONLATESTAPI:
     type: object
     properties:
@@ -407,3 +598,47 @@ definitions:
             type: string
           svg:
             type: string
+  GeoJsonBodyRequest:
+    type: object
+    properties:
+      geojson:
+        properties:
+          schema:
+            $ref: '#/definitions/Features'
+  Features:
+    type: object
+    properties:
+      type:
+        type: string
+        description: Type of feature
+      features:
+        type: array
+        description: Features
+        items:
+          $ref: '#/definitions/Feature'
+  Feature:
+    type: object
+    properties:
+      type:
+        type: string
+        description: Type of feature
+      properties:
+        type: object
+        description: Feature
+      geometry:
+        type: object
+        description: Geometries
+        properties:
+          schema:
+            $ref: '#/definitions/Geometry'
+  Geometry:
+    type: object
+    properties:
+      type:
+        type: string
+        description: Geometry type
+      coordinates:
+        type: array
+        description: Coordinates array
+        items:
+          type: object

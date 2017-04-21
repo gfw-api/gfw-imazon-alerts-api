@@ -44,5 +44,12 @@
             "method": "GET",
             "path": "/api/v1/imazon-alerts/latest"
         }]
+    }, {
+        "url": "/v1/imazon-alerts",
+        "method": "POST",
+        "endpoints": [{
+            "method": "POST",
+            "path": "/api/v1/imazon-alerts"
+        }]
     }]
 }
