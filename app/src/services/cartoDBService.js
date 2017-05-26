@@ -293,8 +293,8 @@ class CartoDBService {
                 let result = {
                     value: data.rows
                 };
-                result.area_ha = geostore.area_ha;
-                
+                result.area_ha = geostore.areaHa;
+
                 result.downloadUrls = this.getDownloadUrls(ISO, params);
                 return result;
             }
