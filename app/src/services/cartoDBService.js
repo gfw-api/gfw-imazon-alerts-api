@@ -15,6 +15,8 @@ const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopol
 
 const AREA = `select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON('{{{geojson}}}'), 4326), TRUE)/1000 as area_ha`;
 
+const AREA_ISO = `SELECT ST_Area(geography(the_geom))/10000 as area_ha FROM gadm2_countries_simple WHERE iso = UPPER('{{iso}}')`;
+
 const ISO = `
         with p as (SELECT the_geom_webmercator, (ST_Area(geography(the_geom))/10000) as area_ha FROM gadm2_countries_simple WHERE iso = UPPER('{{iso}}'))
         SELECT data_type,
@@ -24,6 +26,8 @@ const ISO = `
         WHERE i.date >= '{{begin}}'::date
             AND i.date <= '{{end}}'::date
         GROUP BY data_type,  area_ha `;
+
+const AREA_ID1 = `SELECT ST_Area(geography(the_geom))/10000 as area_ha FROM gadm2_provinces_simple WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}}`;
 
 const ID1 = `with p as (SELECT the_geom_webmercator, (ST_Area(geography(the_geom))/10000) as area_ha FROM gadm2_provinces_simple WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}})
         SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value, area_ha
@@ -149,24 +153,21 @@ class CartoDBService {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
+        let result = {};
+        let dataArea = yield executeThunk(this.client, AREA_ISO, {iso:iso});
+        if(dataArea.rows.length > 0){
+            result.area_ha = dataArea.rows[0].area_ha;
+        }
         if (iso === 'BRA') {
             let data = yield executeThunk(this.client, ISO, params);
             if (data.rows) {
-                let result = {
-                    value: data.rows
-                };
-                if(data.rows.length > 0){
-                    result.area_ha = data.rows[0].area_ha;
-                }
+                result.value = data.rows;
                 result.downloadUrls = this.getDownloadUrls(ISO, params);
-                return result;
             }
         } else {
-            return {
-                value: []
-            };
+            result.value = [];
         }
-        return null;
+        return result;
     }
 
     *
@@ -182,24 +183,21 @@ class CartoDBService {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
+        let result = {};
+        let dataArea = yield executeThunk(this.client, AREA_ISO, {iso:iso, id1:id1});
+        if(dataArea.rows.length > 0){
+            result.area_ha = dataArea.rows[0].area_ha;
+        }
         if (iso === 'BRA') {
             let data = yield executeThunk(this.client, ID1, params);
             if (data.rows) {
-                let result = {
-                    value: data.rows
-                };
-                if(data.rows.length > 0){
-                    result.area_ha = data.rows[0].area_ha;
-                }
+                result.value = data.rows;
                 result.downloadUrls = this.getDownloadUrls(ISO, params);
-                return result;
             }
         } else {
-            return {
-                value: []
-            };
+            result.value = [];
         }
-        return null;
+        return result;
     }
 
     *
