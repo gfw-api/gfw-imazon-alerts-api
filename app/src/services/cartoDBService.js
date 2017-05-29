@@ -184,7 +184,7 @@ class CartoDBService {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
         let result = {};
-        let dataArea = yield executeThunk(this.client, AREA_ISO, {iso:iso, id1:id1});
+        let dataArea = yield executeThunk(this.client, AREA_ID1, {iso:iso, id1:id1});
         if(dataArea.rows.length > 0){
             result.area_ha = dataArea.rows[0].area_ha;
         }
