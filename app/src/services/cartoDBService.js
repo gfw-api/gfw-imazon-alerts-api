@@ -12,6 +12,13 @@ const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopol
              FROM imazon_sad i, poly        WHERE i.date >= '{{begin}}'::date
                AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type `;
 
+<<<<<<< HEAD
+=======
+const AREA = `select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON('{{{geojson}}}'), 4326), TRUE)/1000 as area_ha`;
+
+const AREA_ISO = `SELECT ST_Area(geography(the_geom))/10000 as area_ha FROM gadm2_countries_simple WHERE iso = UPPER('{{iso}}')`;
+
+>>>>>>> 272e6739d12c75ba62f16419c2a66674b1952c9f
 const ISO = `
         with p as (SELECT the_geom_webmercator FROM gadm2_countries_simple WHERE iso = UPPER('{{iso}}'))
         SELECT data_type,
@@ -20,10 +27,19 @@ const ISO = `
         FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
         WHERE i.date >= '{{begin}}'::date
             AND i.date <= '{{end}}'::date
+<<<<<<< HEAD
         GROUP BY data_type `;
 const AREA = `select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON('{{{geojson}}}'), 4326), TRUE)/1000 as area_ha`;
 const ID1 = `with p as (SELECT the_geom_webmercator FROM gadm2_provinces_simple WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}})
         SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value
+=======
+        GROUP BY data_type,  area_ha `;
+
+const AREA_ID1 = `SELECT ST_Area(geography(the_geom))/10000 as area_ha FROM gadm2_provinces_simple WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}}`;
+
+const ID1 = `with p as (SELECT the_geom_webmercator, (ST_Area(geography(the_geom))/10000) as area_ha FROM gadm2_provinces_simple WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}})
+        SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value, area_ha
+>>>>>>> 272e6739d12c75ba62f16419c2a66674b1952c9f
         FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
         and i.date >= '{{begin}}'::date
         AND i.date <= '{{end}}'::date
@@ -139,6 +155,7 @@ class CartoDBService {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
+
         let geostore = yield GeostoreService.getGeostoreByIso(iso);
         if (geostore) {
             if (iso === 'BRA') {
@@ -162,7 +179,7 @@ class CartoDBService {
                 };
             }
         }
-        return null;
+        return result;
     }
 
     *
@@ -178,6 +195,7 @@ class CartoDBService {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
+
         let geostore = yield GeostoreService.getGeostoreByIsoAndId(iso, id1);
         if (geostore){ 
             if (iso === 'BRA') {
@@ -202,7 +220,7 @@ class CartoDBService {
                 };
             }
         }
-        return null;
+        return result;
     }
 
     *
@@ -293,7 +311,6 @@ class CartoDBService {
                     value: data.rows
                 };
                 result.area_ha = geostore.areaHa;
-                
                 result.downloadUrls = this.getDownloadUrls(WORLD, params);
                 return result;
             }
