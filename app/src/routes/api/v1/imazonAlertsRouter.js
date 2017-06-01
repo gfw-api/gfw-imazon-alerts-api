@@ -47,7 +47,7 @@ class ImazonAlertsRouter {
         if (!useTable) {
             this.throw(404, 'Name not found');
         }
-        let data = yield CartoDBService.getUse(useTable, this.params.id, this.query.alertQuery, this.query.period);
+        let data = yield CartoDBService.getUse(this.params.name, useTable, this.params.id, this.query.alertQuery, this.query.period);
         this.body = ImazonAlertsSerializer.serialize(data);
 
     }
