@@ -80,7 +80,7 @@ server.listen(port, function () {
         microserviceClient.autoDiscovery(config.get('service.name')).then(() => {}, (err) => {
             logger.error('Error registering');
             process.exit(1);
-        });;
+        });
     }
 });
 
