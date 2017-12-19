@@ -77,7 +77,10 @@ server.listen(port, function () {
         app: app
     });
     if (process.env.CT_REGISTER_MODE && process.env.CT_REGISTER_MODE === 'auto') {
-        microserviceClient.autoDiscovery(config.get('service.name'));
+        microserviceClient.autoDiscovery(config.get('service.name')).then(() => {}, (err) => {
+            logger.error('Error registering');
+            process.exit(1);
+        });;
     }
 });
 
