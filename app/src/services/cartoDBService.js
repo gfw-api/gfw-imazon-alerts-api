@@ -8,7 +8,7 @@ const NotFound = require('errors/notFound');
 const GeostoreService = require('services/geostoreService');
 
 const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopology(ST_SetSRID(ST_MakeValid(ST_GeomFromGeoJSON('{{{geojson}}}')), 4326), 0.01), 3857) geojson)
-             SELECT data_type
+             SELECT data_type, count(*) AS value
              FROM imazon_sad i, poly        WHERE i.date >= '{{begin}}'::date
                AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type `;
 
