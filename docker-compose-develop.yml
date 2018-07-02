@@ -8,6 +8,8 @@ develop:
     NODE_ENV: dev
     CARTODB_USER: wri-01
     API_GATEWAY_URL: http://mymachine:9000
+    CT_URL: http://mymachine:9000
+    LOCAL_URL: http://mymachine:3600
     API_VERSION: v1
   command: develop
   volumes:
