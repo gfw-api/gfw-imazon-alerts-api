@@ -45,7 +45,7 @@ class ImazonAlertsRouter {
                 useTable = this.params.name;
         }
         if (!useTable) {
-            tableName = this.params.name;
+            useTable = this.params.name;
         }
         let data = yield CartoDBService.getUse(this.params.name, useTable, this.params.id, this.query.alertQuery, this.query.period);
         this.body = ImazonAlertsSerializer.serialize(data);
