@@ -13,25 +13,25 @@ const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopol
                AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type `;
 
 const ISO = `
-        with p as (SELECT st_makevalid(st_simplify(the_geom, {{simplify}})) as the_geom, area_ha FROM gadm36_countries WHERE iso = UPPER('{{iso}}'))
+        with p as (SELECT st_makevalid(st_simplify(the_geom_webmercator, {{simplify}})) as the_geom_webmercator, area_ha FROM gadm36_countries WHERE iso = UPPER('{{iso}}'))
         SELECT data_type,
-            sum(ST_Area(i.the_geom)/(100*100)) AS value, area_ha
+            sum(ST_Area(i.the_geom_webmercator)/(100*100)) AS value, area_ha
             {{additionalSelect}}
-        FROM imazon_sad i right join p on st_intersects(i.the_geom, p.the_geom)
+        FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
         WHERE i.date >= '{{begin}}'::date
             AND i.date <= '{{end}}'::date
         GROUP BY data_type, area_ha`;
 
-const ID1 = `with p as (SELECT st_makevalid(st_simplify(the_geom, {{simplify}})) as the_geom, area_ha FROM gadm36_adm1 WHERE iso = UPPER('{{iso}}') AND gid_1 = '{{id1}}')
-        SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom, p.the_geom))/(10000)) AS value, area_ha
-        FROM imazon_sad i right join p on st_intersects(i.the_geom, p.the_geom)
+const ID1 = `with p as (SELECT st_makevalid(st_simplify(the_geom_webmercator, {{simplify}})) as the_geom_webmercator, area_ha FROM gadm36_adm1 WHERE iso = UPPER('{{iso}}') AND gid_1 = '{{id1}}')
+        SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value, area_ha
+        FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
         and i.date >= '{{begin}}'::date
         AND i.date <= '{{end}}'::date
         GROUP BY data_type, area_ha`;
 
-const ID2 = `with p as (SELECT st_makevalid(st_simplify(the_geom, {{simplify}})) as the_geom, area_ha FROM gadm36_adm2 WHERE iso = UPPER('{{iso}}') AND gid_1 = '{{id1}}' AND gid_2 = '{{id2}}')
-        SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom, p.the_geom))/(10000)) AS value, area_ha
-        FROM imazon_sad i right join p on st_intersects(i.the_geom, p.the_geom)
+const ID2 = `with p as (SELECT st_makevalid(st_simplify(the_geom_webmercator, {{simplify}})) as the_geom_webmercator, area_ha FROM gadm36_adm2 WHERE iso = UPPER('{{iso}}') AND gid_1 = '{{id1}}' AND gid_2 = '{{id2}}')
+        SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value, area_ha
+        FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
         and i.date >= '{{begin}}'::date
         AND i.date <= '{{end}}'::date
         GROUP BY data_type, area_ha`;
