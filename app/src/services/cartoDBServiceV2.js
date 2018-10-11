@@ -285,6 +285,13 @@ class CartoDBServiceV2 {
             result.value = [];
             return result;
         }
+        const geostore = yield GeostoreService.getGeostoreByUse(useName, id);
+        if(geostore){
+            return {
+                value: 0,
+                area_ha: geostore.area_ha
+            }
+        }
         return null;
     }
 
@@ -316,6 +323,13 @@ class CartoDBServiceV2 {
             result.period = period;
             result.value = [];
             return result;
+        }
+        const geostore = yield GeostoreService.getGeostoreByUse(useName, id);
+        if(geostore){
+            return {
+                value: 0,
+                area_ha: geostore.area_ha
+            }
         }
         return null;
     }
