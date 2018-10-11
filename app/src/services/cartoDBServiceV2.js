@@ -13,7 +13,7 @@ const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopol
                AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type `;
 
 const ISO = `
-        with p as (SELECT st_makevalid(st_simplify(the_geom_webmercator, {{simplify}})) as the_geom_webmercator, area_ha FROM gadm36_countries WHERE iso = UPPER('{{iso}}'))
+        with p as (SELECT st_makevalid(st_simplify(the_geom_webmercator, 5)) as the_geom_webmercator, area_ha FROM gadm36_countries WHERE iso = UPPER('{{iso}}'))
         SELECT data_type,
             sum(ST_Area(i.the_geom_webmercator)/(100*100)) AS value, area_ha
             {{additionalSelect}}
@@ -36,7 +36,9 @@ const ID2 = `with p as (SELECT st_makevalid(st_simplify(the_geom_webmercator, {{
         AND i.date <= '{{end}}'::date
         GROUP BY data_type, area_ha`;
 
-const USE = `SELECT data_type, SUM(ST_Area(ST_Intersection(
+const USEAREA = `select area_ha FROM {{useTable}} WHERE cartodb_id = {{pid}}`;
+
+const USE = `SELECT area_ha, data_type, SUM(ST_Area(ST_Intersection(
                 i.the_geom_webmercator,
                 p.the_geom_webmercator))/(10000)) AS value
                {{additionalSelect}}
@@ -47,7 +49,9 @@ const USE = `SELECT data_type, SUM(ST_Area(ST_Intersection(
             AND i.date >= '{{begin}}'::date
             AND i.date <= '{{end}}'::date
             where p.cartodb_id = {{pid}}
-        GROUP BY data_type`;
+        GROUP BY data_type, area_ha`;
+
+const WDPAAREA = `select gis_area*100 as area_ha FROM wdpa_protected_areas WHERE wdpaid = {{wdpaid}}`;
 
 const WDPA = `WITH  p as ( SELECT
             CASE WHEN marine::numeric = 2
@@ -60,7 +64,7 @@ const WDPA = `WITH  p as ( SELECT
             END as the_geom_webmercator, gis_area*100 as area_ha FROM wdpa_protected_areas where wdpaid={{wdpaid}})
             SELECT data_type, SUM(ST_Area(ST_Intersection(
                             i.the_geom_webmercator,
-                            p.the_geom_webmercator))/(10000)) AS value
+                            p.the_geom_webmercator))/(10000)) AS value, area_ha
             {{additionalSelect}}
             FROM p
             inner join imazon_sad i
@@ -68,7 +72,7 @@ const WDPA = `WITH  p as ( SELECT
                             p.the_geom_webmercator)
             and i.date >= '{{begin}}'::date
                         AND i.date <= '{{end}}'::date
-            GROUP BY data_type`;
+            GROUP BY data_type, area_ha`;
 
 const LATEST = `SELECT MAX(date) AS latest
     FROM imazon_sad`;
@@ -127,12 +131,10 @@ class CartoDBServiceV2 {
 
     getDownloadUrls(query, params) {
         try {
-            let formats = ['csv', 'geojson', 'kml', 'shp', 'svg'];
+            let formats = ['csv', 'json', 'kml', 'shp', 'svg'];
             let download = {};
             let queryFinal = Mustache.render(query, params);
             queryFinal = queryFinal.replace(MIN_MAX_DATE_SQL, '');
-            queryFinal = queryFinal.replace('SELECT data_type,', 'SELECT i.data_type, i.the_geom,');
-            queryFinal = queryFinal.replace('GROUP BY data_type', 'GROUP BY data_type, i.the_geom');
             queryFinal = encodeURIComponent(queryFinal);
             for (let i = 0, length = formats.length; i < length; i++) {
                 download[formats[i]] = this.apiUrl + '?q=' + queryFinal + '&format=' + formats[i];
@@ -173,7 +175,7 @@ class CartoDBServiceV2 {
             if (area && area.rows && area.rows.length) {
                 let areaHa = area.rows && area.rows[0] || null;
                 result.area_ha = areaHa.area_ha;
-                result.value = null;
+                result.value = [];
                 return result;
             }
         }
@@ -209,7 +211,7 @@ class CartoDBServiceV2 {
         if (area && area.rows && area.rows.length) {
             let areaHa = area.rows && area.rows[0] || null;
             result.area_ha = areaHa.area_ha;
-            result.value = null;
+            result.value = [];
             return result;
         }
         return null;
@@ -245,13 +247,13 @@ class CartoDBServiceV2 {
         if (area && area.rows && area.rows.length) {
             let areaHa = area.rows && area.rows[0] || null;
             result.area_ha = areaHa.area_ha;
-            result.value = null;
+            result.value = [];
             return result;
         }
         return null;
     }
 
-    * getUse(useName, useTable, id, alertQuery, period = defaultDate()) {
+    * getUse(useTable, id, alertQuery, period = defaultDate()) {
         logger.debug('Obtaining use with id %s', id);
         let periods = period.split(',');
         let params = {
@@ -264,21 +266,31 @@ class CartoDBServiceV2 {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
 
-        const geostore = yield GeostoreService.getGeostoreByUse(useName, id);
         let data = yield executeThunk(this.client, USE, params);
-        if (geostore) {
-            if (data.rows && data.rows.length > 0 && data.rows[0].data_type !== null) {
-                let result = {
-                    value: data.rows
-                };
-                result.area_ha = geostore.areaHa;
-                result.downloadUrls = this.getDownloadUrls(USE, params);
-                return result;
-            } else {
-                return {
-                    value: [],
-                    area_ha: geostore.areaHa
-                };
+        let result = {};
+        result.id = id;
+        if (data && data.rows && data.rows.length) {
+            result.area_ha = data.rows[0].area_ha;
+            result.value = data.rows.map(el => ({label: el.data_type === 'defor' ? 'deforestation' : 'degraded', value: el.value, unit: 'ha'}));
+            result.period = period;
+            result.downloadUrls = this.getDownloadUrls(USE, params);
+            return result;
+        } 
+        
+        let areas = yield executeThunk(this.client, USEAREA, params);
+        if (areas.rows && areas.rows.length > 0) {
+            let areaHa = areas.rows && areas.rows[0] || null;
+            result.area_ha = areaHa.area_ha;
+            result.period = period;
+            result.value = [];
+            return result;
+        }
+        const geostore = yield GeostoreService.getGeostoreByUse(useName, id);
+        if(geostore){
+            return {
+                id: id,
+                value: [],
+                area_ha: geostore.area_ha
             }
         }
         return null;
@@ -295,21 +307,30 @@ class CartoDBServiceV2 {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        const geostore = yield GeostoreService.getGeostoreByWdpa(wdpaid);
         let data = yield executeThunk(this.client, WDPA, params);
-        if (geostore) {
-            if (data.rows) {
-                let result = {
-                    value: data.rows
-                };
-                result.area_ha = geostore.areaHa;
-                result.downloadUrls = this.getDownloadUrls(WDPA, params);
-                return result;
-            } else {
-                return {
-                    value: [],
-                    area_ha: geostore.areaHa
-                };
+        let result = {};
+        result.id = wdpaid;
+        if (data && data.rows && data.rows.length) {
+            result.area_ha = data.rows[0].area_ha;
+            result.value = data.rows.map(el => ({label: el.data_type === 'defor' ? 'deforestation' : 'degraded', value: el.value, unit: 'ha'}));
+            result.period = period;
+            result.downloadUrls = this.getDownloadUrls(WDPA, params);
+            return result;
+        } 
+        let areas = yield executeThunk(this.client, WDPAAREA, params);
+        if (areas.rows && areas.rows.length > 0) {
+            let areaHa = areas.rows && areas.rows[0] || null;
+            result.area_ha = areaHa.area_ha;
+            result.period = period;
+            result.value = [];
+            return result;
+        }
+        const geostore = yield GeostoreService.getGeostoreByWdpa(wdpaid);
+        if(geostore){
+            return {
+                id: wdpaid,
+                value: [],
+                area_ha: geostore.area_ha
             }
         }
         return null;

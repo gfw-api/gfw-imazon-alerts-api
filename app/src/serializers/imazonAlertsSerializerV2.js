@@ -9,7 +9,7 @@ var imazonAlertsSerializerV2 = new JSONAPISerializer('imazon-alerts', {
         return attribute;
     },
     downloadUrls:{
-        attributes: ['csv', 'geojson', 'kml', 'shp', 'svg']
+        attributes: ['csv', 'json', 'kml', 'shp', 'svg']
     },
     value: {
         attributes: ['label', 'value', 'unit', 'min_date', 'max_date']
