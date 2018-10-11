@@ -268,7 +268,7 @@ class CartoDBServiceV2 {
 
         let data = yield executeThunk(this.client, USE, params);
         let result = {};
-        result.id = 'WDPA';
+        result.id = id;
         if (data && data.rows && data.rows.length) {
             result.area_ha = data.rows[0].area_ha;
             result.value = data.rows.map(el => ({label: el.data_type === 'defor' ? 'deforestation' : 'degraded', value: el.value, unit: 'ha'}));
@@ -301,7 +301,7 @@ class CartoDBServiceV2 {
         }
         let data = yield executeThunk(this.client, WDPA, params);
         let result = {};
-        result.id = 'WDPA';
+        result.id = wdpaid;
         if (data && data.rows && data.rows.length) {
             result.area_ha = data.rows[0].area_ha;
             result.value = data.rows.map(el => ({label: el.data_type === 'defor' ? 'deforestation' : 'degraded', value: el.value, unit: 'ha'}));
