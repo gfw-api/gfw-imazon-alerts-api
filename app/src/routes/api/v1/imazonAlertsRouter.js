@@ -42,10 +42,10 @@ class ImazonAlertsRouter {
                 useTable = 'gfw_logging';
                 break;
             default:
-                this.throw(400, 'Name param invalid');
+                useTable = this.params.name;
         }
         if (!useTable) {
-            this.throw(404, 'Name not found');
+            useTable = this.params.name;
         }
         let data = yield CartoDBService.getUse(this.params.name, useTable, this.params.id, this.query.alertQuery, this.query.period);
         this.body = ImazonAlertsSerializer.serialize(data);
