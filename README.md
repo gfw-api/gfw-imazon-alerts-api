@@ -1,5 +1,7 @@
-# GFW Fires API
+# GFW Imazon Alerts API
 
+[![Build Status](https://travis-ci.org/gfw-api/gfw-imazon-alerts-api.svg?branch=develop)](https://travis-ci.org/gfw-api/gfw-imazon-alerts-api)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/7c1d35d3f2ddb21fa6a4/test_coverage)](https://codeclimate.com/github/gfw-api/gfw-imazon-alerts-api/test_coverage)
 
 This repository is the microservice that it implement the imazon alerts funcionality and exposed the /imazon-alerts endpoints in the api-gateway
 
@@ -8,7 +10,7 @@ This repository is the microservice that it implement the imazon alerts funciona
 
 You will need [Control Tower](https://github.com/control-tower/control-tower) up and running - either natively or with Docker. Refer to the project's README for information on how to set it up.
 
-The GFW Fires API microservice is built using [Node.js](https://nodejs.org/en/), and can be executed either natively or using Docker, each of which has its own set of requirements.
+The GFW Imazon Alerts API microservice is built using [Node.js](https://nodejs.org/en/), and can be executed either natively or using Docker, each of which has its own set of requirements.
 
 Native execution requires:
 - [Node.js](https://nodejs.org/en/)
