@@ -1,43 +1,42 @@
-'use strict';
-
-var Router = require('koa-router');
-var logger = require('logger');
-var CartoDBServiceV2 = require('services/cartoDBServiceV2');
-var NotFound = require('errors/notFound');
-var ImazonAlertsSerializerV2 = require('serializers/imazonAlertsSerializerV2');
+const Router = require('koa-router');
+const logger = require('logger');
+const CartoDBServiceV2 = require('services/cartoDBServiceV2');
+const NotFound = require('errors/notFound');
+const ImazonAlertsSerializerV2 = require('serializers/imazonAlertsSerializerV2');
 
 
-var router = new Router({
+const router = new Router({
     prefix: '/imazon-alerts'
 });
 
 class ImazonAlertsRouterV2 {
-    static * getAdm0() {
+
+    static* getAdm0() {
         logger.info('Obtaining national data');
-        let data = yield CartoDBServiceV2.getAdm0(this.params.iso, this.query.alertQuery, this.query.period);
+        const data = yield CartoDBServiceV2.getAdm0(this.params.iso, this.query.alertQuery, this.query.period);
 
         this.body = ImazonAlertsSerializerV2.serialize(data);
     }
 
-    static * getAdm1() {
+    static* getAdm1() {
         logger.info('Obtaining subnational data');
-        let data = yield CartoDBServiceV2.getAdm1(this.params.iso, this.params.id1, this.query.alertQuery, this.query.period);
+        const data = yield CartoDBServiceV2.getAdm1(this.params.iso, this.params.id1, this.query.alertQuery, this.query.period);
         this.body = ImazonAlertsSerializerV2.serialize(data);
     }
 
-    static * getAdm2() {
+    static* getAdm2() {
         logger.info('Obtaining subnational data');
-        let data = yield CartoDBServiceV2.getAdm2(this.params.iso, this.params.id1, this.params.id2, this.query.alertQuery, this.query.period);
+        const data = yield CartoDBServiceV2.getAdm2(this.params.iso, this.params.id1, this.params.id2, this.query.alertQuery, this.query.period);
         this.body = ImazonAlertsSerializerV2.serialize(data);
     }
 
-    static * use() {
+    static* use() {
         logger.info('Obtaining use data with name %s and id %s', this.params.name, this.params.id);
-        try{
-            let data = yield CartoDBServiceV2.getUse(this.params.name, this.params.id, this.query.alertQuery, this.query.period);
+        try {
+            const data = yield CartoDBServiceV2.getUse(this.params.name, this.params.id, this.query.alertQuery, this.query.period);
             this.body = ImazonAlertsSerializerV2.serialize(data);
-        }catch(err){
-            if(err instanceof NotFound){
+        } catch (err) {
+            if (err instanceof NotFound) {
                 this.throw(404, 'Table not found');
                 return;
             }
@@ -45,21 +44,21 @@ class ImazonAlertsRouterV2 {
         }
     }
 
-    static * wdpa() {
+    static* wdpa() {
         logger.info('Obtaining wpda data with id %s', this.params.id);
-        let data = yield CartoDBServiceV2.getWdpa(this.params.id, this.query.alertQuery, this.query.period);
+        const data = yield CartoDBServiceV2.getWdpa(this.params.id, this.query.alertQuery, this.query.period);
         this.body = ImazonAlertsSerializerV2.serialize(data);
     }
 
-    static * world() {
+    static* world() {
         logger.info('Obtaining world data');
         this.assert(this.query.geostore, 400, 'GeoJSON param required');
-        try{
-            let data = yield CartoDBServiceV2.getWorld(this.query.geostore, this.query.alertQuery, this.query.period);
+        try {
+            const data = yield CartoDBServiceV2.getWorld(this.query.geostore, this.query.alertQuery, this.query.period);
 
             this.body = ImazonAlertsSerializerV2.serialize(data);
-        } catch(err){
-            if(err instanceof NotFound){
+        } catch (err) {
+            if (err instanceof NotFound) {
                 this.throw(404, 'Geostore not found');
                 return;
             }
@@ -69,7 +68,7 @@ class ImazonAlertsRouterV2 {
     }
 
     static checkGeojson(geojson) {
-        if (geojson.type.toLowerCase() === 'polygon'){
+        if (geojson.type.toLowerCase() === 'polygon') {
             return {
                 type: 'FeatureCollection',
                 features: [{
@@ -77,24 +76,25 @@ class ImazonAlertsRouterV2 {
                     geometry: geojson
                 }]
             };
-        } else if (geojson.type.toLowerCase() === 'feature') {
+        }
+        if (geojson.type.toLowerCase() === 'feature') {
             return {
                 type: 'FeatureCollection',
                 features: [geojson]
             };
-        } 
+        }
         return geojson;
     }
 
-    static * worldWithGeojson() {
+    static* worldWithGeojson() {
         logger.info('Obtaining world data with geostore');
         this.assert(this.request.body.geojson, 400, 'GeoJSON param required');
-        try{            
-            let data = yield CartoDBServiceV2.getWorldWithGeojson(ImazonAlertsRouterV2.checkGeojson(this.request.body.geojson), this.query.alertQuery, this.query.period);
+        try {
+            const data = yield CartoDBServiceV2.getWorldWithGeojson(ImazonAlertsRouterV2.checkGeojson(this.request.body.geojson), this.query.alertQuery, this.query.period);
 
             this.body = ImazonAlertsSerializerV2.serialize(data);
-        } catch(err){
-            if(err instanceof NotFound){
+        } catch (err) {
+            if (err instanceof NotFound) {
                 this.throw(404, 'Geostore not found');
                 return;
             }
@@ -103,14 +103,14 @@ class ImazonAlertsRouterV2 {
 
     }
 
-    static * latest() {
+    static* latest() {
         logger.info('Obtaining latest data');
-        try{
-            let data = yield CartoDBServiceV2.latest(this.query.limit);
+        try {
+            const data = yield CartoDBServiceV2.latest(this.query.limit);
 
             this.body = ImazonAlertsSerializerV2.serializeLatest(data);
-        } catch(err){
-            if(err instanceof NotFound){
+        } catch (err) {
+            if (err instanceof NotFound) {
                 this.throw(404, 'Geostore not found');
                 return;
             }
@@ -121,13 +121,12 @@ class ImazonAlertsRouterV2 {
 
 }
 
-var isCached = function*(next) {
+const isCached = function* isCached(next) {
     if (yield this.cashed()) {
         return;
     }
     yield next;
 };
-
 
 
 router.get('/admin/:iso', isCached, ImazonAlertsRouterV2.getAdm0);

@@ -1,6 +1,5 @@
-'use strict';
+/* eslint-disable no-mixed-operators */
 const logger = require('logger');
-const path = require('path');
 const config = require('config');
 const CartoDB = require('cartodb');
 const Mustache = require('mustache');
@@ -22,14 +21,21 @@ const ISO = `
             AND i.date <= '{{end}}'::date
         GROUP BY data_type, area_ha`;
 
-const ID1 = `with p as (SELECT st_makevalid(st_simplify(the_geom_webmercator, {{simplify}})) as the_geom_webmercator, area_ha FROM gadm36_adm1 WHERE iso = UPPER('{{iso}}') AND gid_1 = '{{id1}}')
+const ID1 = `with p as (
+            SELECT 
+            st_makevalid(st_simplify(the_geom_webmercator, {{simplify}})) as the_geom_webmercator, 
+            area_ha FROM gadm36_adm1 WHERE iso = UPPER('{{iso}}') AND gid_1 = '{{id1}}'
+        )
         SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value, area_ha
         FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
         and i.date >= '{{begin}}'::date
         AND i.date <= '{{end}}'::date
         GROUP BY data_type, area_ha`;
 
-const ID2 = `with p as (SELECT st_makevalid(st_simplify(the_geom_webmercator, {{simplify}})) as the_geom_webmercator, area_ha FROM gadm36_adm2 WHERE iso = UPPER('{{iso}}') AND gid_1 = '{{id1}}' AND gid_2 = '{{id2}}')
+const ID2 = `with p as (
+            SELECT st_makevalid(st_simplify(the_geom_webmercator, {{simplify}})) as the_geom_webmercator, 
+            area_ha FROM gadm36_adm2 WHERE iso = UPPER('{{iso}}') AND gid_1 = '{{id1}}' AND gid_2 = '{{id2}}'
+        )
         SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value, area_ha
         FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
         and i.date >= '{{begin}}'::date
@@ -81,34 +87,30 @@ const MIN_MAX_DATE_SQL = ', MIN(date) as min_date, MAX(date) as max_date ';
 
 const GIDAREA = `select area_ha FROM {{table}} WHERE gid_{{level}} = '{{gid}}'`;
 
-var executeThunk = function (client, sql, params) {
-    return function (callback) {
-        logger.info(Mustache.render(sql, params));
-        client.execute(sql, params).done(function (data) {
-            callback(null, data);
-        }).error(function (err) {
-            callback(err, null);
-        });
-    };
+const executeThunk = (client, sql, params) => (callback) => {
+    logger.info(Mustache.render(sql, params));
+    client.execute(sql, params).done((data) => {
+        callback(null, data);
+    }).error((err) => {
+        callback(err, null);
+    });
 };
 
-const routeToGid = function (adm0, adm1, adm2) {
-    return {
-        adm0,
-        adm1: adm1 ? `${adm0}.${adm1}_1` : null,
-        adm2: adm2 ? `${adm0}.${adm1}.${adm2}_1` : null
-    };
-};
+const routeToGid = (adm0, adm1, adm2) => ({
+    adm0,
+    adm1: adm1 ? `${adm0}.${adm1}_1` : null,
+    adm2: adm2 ? `${adm0}.${adm1}.${adm2}_1` : null
+});
 
-let getToday = function () {
-    let today = new Date();
+const getToday = () => {
+    const today = new Date();
     return `${today.getFullYear().toString()}-${(today.getMonth() + 1).toString()}-${today.getDate().toString()}`;
 };
 
-let defaultDate = function () {
-    let to = getToday();
-    let from = '2008-04-30';
-    return from + ',' + to;
+const defaultDate = () => {
+    const to = getToday();
+    const from = '2008-04-30';
+    return `${from},${to}`;
 };
 
 const getSimplify = (iso) => {
@@ -129,15 +131,16 @@ class CartoDBServiceV2 {
         this.apiUrl = config.get('cartoDB.apiUrl');
     }
 
+    // eslint-disable-next-line consistent-return
     getDownloadUrls(query, params) {
         try {
-            let formats = ['csv', 'json', 'kml', 'shp', 'svg'];
-            let download = {};
+            const formats = ['csv', 'json', 'kml', 'shp', 'svg'];
+            const download = {};
             let queryFinal = Mustache.render(query, params);
             queryFinal = queryFinal.replace(MIN_MAX_DATE_SQL, '');
             queryFinal = encodeURIComponent(queryFinal);
-            for (let i = 0, length = formats.length; i < length; i++) {
-                download[formats[i]] = this.apiUrl + '?q=' + queryFinal + '&format=' + formats[i];
+            for (let i = 0, { length } = formats; i < length; i++) {
+                download[formats[i]] = `${this.apiUrl}?q=${queryFinal}&format=${formats[i]}`;
             }
             return download;
         } catch (err) {
@@ -150,8 +153,8 @@ class CartoDBServiceV2 {
         logger.debug('Obtaining national of iso %s', iso);
         const gid = routeToGid(iso);
         const simplify = getSimplify(iso);
-        let periods = period.split(',');
-        let params = {
+        const periods = period.split(',');
+        const params = {
             iso: gid.adm0,
             begin: periods[0],
             end: periods[1],
@@ -161,19 +164,27 @@ class CartoDBServiceV2 {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
         if (iso === 'BRA') {
-            let data = yield executeThunk(this.client, ISO, params);
-            let result = {};
+            const data = yield executeThunk(this.client, ISO, params);
+            const result = {};
             result.downloadUrls = this.getDownloadUrls(ISO, params);
             result.id = params.iso;
             result.period = period;
             if (data && data.rows && data.rows.length) {
                 result.area_ha = data.rows[0].area_ha;
-                result.value = data.rows.map(el => ({label: el.data_type === 'defor' ? 'deforestation' : 'degraded', value: el.value, unit: 'ha'}));
+                result.value = data.rows.map((el) => ({
+                    label: el.data_type === 'defor' ? 'deforestation' : 'degraded',
+                    value: el.value,
+                    unit: 'ha'
+                }));
                 return result;
             }
-            let area = yield executeThunk(this.client, GIDAREA, { table: 'gadm36_countries', level: '0', gid: params.id0 });
+            const area = yield executeThunk(this.client, GIDAREA, {
+                table: 'gadm36_countries',
+                level: '0',
+                gid: params.id0
+            });
             if (area && area.rows && area.rows.length) {
-                let areaHa = area.rows && area.rows[0] || null;
+                const areaHa = area.rows && area.rows[0] || null;
                 result.area_ha = areaHa.area_ha;
                 result.value = [];
                 return result;
@@ -186,8 +197,8 @@ class CartoDBServiceV2 {
         logger.debug('Obtaining subnational of iso %s and id1', iso, id1);
         const gid = routeToGid(iso, id1);
         const simplify = getSimplify(iso) / 100;
-        let periods = period.split(',');
-        let params = {
+        const periods = period.split(',');
+        const params = {
             iso: gid.adm0,
             id1: gid.adm1,
             begin: periods[0],
@@ -197,19 +208,23 @@ class CartoDBServiceV2 {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        let data = yield executeThunk(this.client, ID1, params);
-        let result = {};
+        const data = yield executeThunk(this.client, ID1, params);
+        const result = {};
         result.downloadUrls = this.getDownloadUrls(ID1, params);
         result.id = params.iso;
         result.period = period;
         if (data && data.rows && data.rows.length) {
             result.area_ha = data.rows[0].area_ha;
-            result.value = data.rows.map(el => ({label: el.data_type === 'defor' ? 'deforestation' : 'degraded', value: el.value, unit: 'ha'}));            
+            result.value = data.rows.map((el) => ({
+                label: el.data_type === 'defor' ? 'deforestation' : 'degraded',
+                value: el.value,
+                unit: 'ha'
+            }));
             return result;
         }
-        let area = yield executeThunk(this.client, GIDAREA, { table: 'gadm36_adm1', level: '1', gid: params.id1 });
+        const area = yield executeThunk(this.client, GIDAREA, { table: 'gadm36_adm1', level: '1', gid: params.id1 });
         if (area && area.rows && area.rows.length) {
-            let areaHa = area.rows && area.rows[0] || null;
+            const areaHa = area.rows && area.rows[0] || null;
             result.area_ha = areaHa.area_ha;
             result.value = [];
             return result;
@@ -221,8 +236,8 @@ class CartoDBServiceV2 {
         logger.debug('Obtaining regional data', iso, id1, id2);
         const gid = routeToGid(iso, id1, id2);
         const simplify = getSimplify(iso) / 100;
-        let periods = period.split(',');
-        let params = {
+        const periods = period.split(',');
+        const params = {
             iso: gid.adm0,
             id1: gid.adm1,
             id2: gid.adm2,
@@ -233,19 +248,23 @@ class CartoDBServiceV2 {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        let data = yield executeThunk(this.client, ID2, params);
-        let result = {};
+        const data = yield executeThunk(this.client, ID2, params);
+        const result = {};
         result.downloadUrls = this.getDownloadUrls(ID2, params);
         result.id = params.iso;
         result.period = period;
         if (data && data.rows && data.rows.length) {
             result.area_ha = data.rows[0].area_ha;
-            result.value = data.rows.map(el => ({label: el.data_type === 'defor' ? 'deforestation' : 'degraded', value: el.value, unit: 'ha'}));
+            result.value = data.rows.map((el) => ({
+                label: el.data_type === 'defor' ? 'deforestation' : 'degraded',
+                value: el.value,
+                unit: 'ha'
+            }));
             return result;
         }
-        let area = yield executeThunk(this.client, GIDAREA, { table: 'gadm36_adm2', level: '2', gid: params.id2 });
+        const area = yield executeThunk(this.client, GIDAREA, { table: 'gadm36_adm2', level: '2', gid: params.id2 });
         if (area && area.rows && area.rows.length) {
-            let areaHa = area.rows && area.rows[0] || null;
+            const areaHa = area.rows && area.rows[0] || null;
             result.area_ha = areaHa.area_ha;
             result.value = [];
             return result;
@@ -255,9 +274,9 @@ class CartoDBServiceV2 {
 
     * getUse(useTable, id, alertQuery, period = defaultDate()) {
         logger.debug('Obtaining use with id %s', id);
-        let periods = period.split(',');
-        let params = {
-            useTable: useTable,
+        const periods = period.split(',');
+        const params = {
+            useTable,
             pid: id,
             begin: periods[0],
             end: periods[1]
@@ -266,29 +285,33 @@ class CartoDBServiceV2 {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
 
-        let data = yield executeThunk(this.client, USE, params);
-        let result = {};
+        const data = yield executeThunk(this.client, USE, params);
+        const result = {};
         result.id = id;
         if (data && data.rows && data.rows.length) {
             result.area_ha = data.rows[0].area_ha;
-            result.value = data.rows.map(el => ({label: el.data_type === 'defor' ? 'deforestation' : 'degraded', value: el.value, unit: 'ha'}));
+            result.value = data.rows.map((el) => ({
+                label: el.data_type === 'defor' ? 'deforestation' : 'degraded',
+                value: el.value,
+                unit: 'ha'
+            }));
             result.period = period;
             result.downloadUrls = this.getDownloadUrls(USE, params);
             return result;
-        } 
-        
-        let areas = yield executeThunk(this.client, USEAREA, params);
+        }
+
+        const areas = yield executeThunk(this.client, USEAREA, params);
         if (areas.rows && areas.rows.length > 0) {
-            let areaHa = areas.rows && areas.rows[0] || null;
+            const areaHa = areas.rows && areas.rows[0] || null;
             result.area_ha = areaHa.area_ha;
             result.period = period;
             result.value = [];
             return result;
         }
         const geostore = yield GeostoreService.getGeostoreByUse(useTable, id);
-        if(geostore){
+        if (geostore) {
             return {
-                id: id,
+                id,
                 value: [],
                 area_ha: geostore.area_ha
             };
@@ -298,35 +321,39 @@ class CartoDBServiceV2 {
 
     * getWdpa(wdpaid, alertQuery, period = defaultDate()) {
         logger.debug('Obtaining wpda of id %s', wdpaid);
-        let periods = period.split(',');
-        let params = {
-            wdpaid: wdpaid,
+        const periods = period.split(',');
+        const params = {
+            wdpaid,
             begin: periods[0],
             end: periods[1]
         };
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        let data = yield executeThunk(this.client, WDPA, params);
-        let result = {};
+        const data = yield executeThunk(this.client, WDPA, params);
+        const result = {};
         result.id = wdpaid;
         if (data && data.rows && data.rows.length) {
             result.area_ha = data.rows[0].area_ha;
-            result.value = data.rows.map(el => ({label: el.data_type === 'defor' ? 'deforestation' : 'degraded', value: el.value, unit: 'ha'}));
+            result.value = data.rows.map((el) => ({
+                label: el.data_type === 'defor' ? 'deforestation' : 'degraded',
+                value: el.value,
+                unit: 'ha'
+            }));
             result.period = period;
             result.downloadUrls = this.getDownloadUrls(WDPA, params);
             return result;
-        } 
-        let areas = yield executeThunk(this.client, WDPAAREA, params);
+        }
+        const areas = yield executeThunk(this.client, WDPAAREA, params);
         if (areas.rows && areas.rows.length > 0) {
-            let areaHa = areas.rows && areas.rows[0] || null;
+            const areaHa = areas.rows && areas.rows[0] || null;
             result.area_ha = areaHa.area_ha;
             result.period = period;
             result.value = [];
             return result;
         }
         const geostore = yield GeostoreService.getGeostoreByWdpa(wdpaid);
-        if(geostore){
+        if (geostore) {
             return {
                 id: wdpaid,
                 value: [],
@@ -342,8 +369,8 @@ class CartoDBServiceV2 {
         const geostore = yield GeostoreService.getGeostoreByHash(hashGeoStore);
         if (geostore && geostore.geojson) {
             logger.debug('Executing query in cartodb with geojson', geostore.geojson);
-            let periods = period.split(',');
-            let params = {
+            const periods = period.split(',');
+            const params = {
                 geojson: JSON.stringify(geostore.geojson.features[0].geometry),
                 begin: periods[0],
                 end: periods[1]
@@ -351,9 +378,9 @@ class CartoDBServiceV2 {
             if (alertQuery) {
                 params.additionalSelect = MIN_MAX_DATE_SQL;
             }
-            let data = yield executeThunk(this.client, WORLD, params);
+            const data = yield executeThunk(this.client, WORLD, params);
             if (data.rows) {
-                let result = {
+                const result = {
                     value: data.rows
                 };
                 result.area_ha = geostore.areaHa;
@@ -367,8 +394,8 @@ class CartoDBServiceV2 {
 
     * getWorldWithGeojson(geojson, alertQuery, period = defaultDate()) {
         logger.debug('Executing query in cartodb with geojson', geojson);
-        let periods = period.split(',');
-        let params = {
+        const periods = period.split(',');
+        const params = {
             geojson: JSON.stringify(geojson.features[0].geometry),
             begin: periods[0],
             end: periods[1]
@@ -376,9 +403,9 @@ class CartoDBServiceV2 {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        let data = yield executeThunk(this.client, WORLD, params);
+        const data = yield executeThunk(this.client, WORLD, params);
         if (data.rows) {
-            let result = {
+            const result = {
                 value: data.rows
             };
             if (data.rows.length > 0) {
@@ -389,16 +416,17 @@ class CartoDBServiceV2 {
         }
         return null;
     }
-    
+
     * latest() {
-    logger.debug('Obtaining latest date');
-    let data = yield executeThunk(this.client, LATEST);
-    if (data && data.rows && data.rows.length) {
-        let result = data.rows;
-        return result;
+        logger.debug('Obtaining latest date');
+        const data = yield executeThunk(this.client, LATEST);
+        if (data && data.rows && data.rows.length) {
+            const result = data.rows;
+            return result;
+        }
+        return null;
     }
-    return null;
-}
+
 }
 
 module.exports = new CartoDBServiceV2();

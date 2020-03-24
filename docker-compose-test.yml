@@ -1,8 +1,12 @@
-test:
-  extends:
-    file: base.yml
-    service: base
-  container_name: gfw-imazon-alerts-api-test
-  environment:
-    NODE_ENV: test
-  command: test
+version: "3"
+services:
+  test:
+    build: .
+    ports:
+      - "3600"
+    container_name: gfw-imazon-alerts-api-test
+    environment:
+      PORT: 3600
+      NODE_PATH: app/src
+      NODE_ENV: test
+    command: test

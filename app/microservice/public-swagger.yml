@@ -1,40 +1,40 @@
 swagger: '2.0'
 ###############################################################################
-#                              API Information                                 
+#                              API Information
 ###############################################################################
 info:
   title: GLobal Forest Watch API
   description: |
     The Global Forest Watch API is currently in beta. Based on feedback from trusted testers, this document specifies new API changes that are currently under development. Interested in being a trusted tester? Contact the [Data Lab](mailTo:support@wri.com) at World Resources Institute.
-    
+
     All endpoints are accessible via http & https and are located at
     `https://production-api.globalforestwatch.org`.
-    
-    Forest change measures tree cover loss, tree cover gain, or forest disturbance. The following forest change data are available through the API: 
-    * University of Maryland tree cover loss & gain 
+
+    Forest change measures tree cover loss, tree cover gain, or forest disturbance. The following forest change data are available through the API:
+    * University of Maryland tree cover loss & gain
     * FORMA alerts
     * IMAZON SAD alerts
     * Terrai alerts
     * Prodes
     * Guira Loss
     * Biomass loss
-    * GLAD tree cover loss alerts 
+    * GLAD tree cover loss alerts
     * NASA VIIRs active fires.
-    
+
     Other services provided by the Api complements the ecosystem that surrounds the platform:
-    
+
     * Metadata
-    * Urthecast 
+    * Urthecast
     * Geostore
-    * OGR 
-    * Story 
-    * User 
+    * OGR
+    * Story
+    * User
     * subscription
-    
-  
+
+
     ### Forest Change - Imazon Alerts API
     Deforestation alert system that monitors forest cover loss and forest degradation in the Brazilian Amazon
-    
+
     | Property | Value |
     | --- | --- | --- |
     | Coverage | Brazilian Amazon |
@@ -52,7 +52,7 @@ info:
     name: MIT License (MIT)
     url: https://opensource.org/licenses/MIT
   version: "1.0.0"
-  
+
 host: staging-api.globalforestwatch.org
 
 schemes:
@@ -67,7 +67,7 @@ produces:
 
 basePath: /v1
 ###############################################################################
-#                                  Security                                    
+#                                  Security
 ###############################################################################
 #securityDefinitions:
 #  UserSecurity:
@@ -78,7 +78,7 @@ basePath: /v1
 #security:
 #        - UserSecurity: []
 ###############################################################################
-#                                  Paths                                   
+#                                  Paths
 ###############################################################################
 paths:
   /imazon-alerts:
@@ -97,14 +97,14 @@ paths:
         - name: geostore
           in: query
           description: |
-            Geostore hash 
+            Geostore hash
             ```34cecd4c4809dbbec20ce40be3d1c877```
           required: true
           type: string
         - name: period
           in: query
           description: |
-            Period of time 
+            Period of time
             ```2015-01-01,2016-12-01```
           required: true
           type: string
@@ -113,15 +113,15 @@ paths:
         200:
           description: Results obteined
           examples:
-              data: 
-                type: imazon-alerts
-                id: f123fswse13
-                attributes:
-                  value: []
-                  areaHa: 10472.639768453402
-                  downloadUrls:
-                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
-                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
+            data:
+              type: imazon-alerts
+              id: f123fswse13
+              attributes:
+                value: []
+                areaHa: 10472.639768453402
+                downloadUrls:
+                  csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                  json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
           schema:
             $ref: '#/definitions/IMAZONALERTSAPI'
         404:
@@ -181,7 +181,7 @@ paths:
         - name: period
           in: query
           description: |
-            Period of time 
+            Period of time
             ```2015-01-01,2016-12-01```
           required: true
           type: string
@@ -190,15 +190,15 @@ paths:
         200:
           description: Results obteined
           examples:
-              data: 
-                type: imazon-alerts
-                id: f123fswse13
-                attributes:
-                  value: []
-                  areaHa: 10472.639768453402
-                  downloadUrls:
-                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
-                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
+            data:
+              type: imazon-alerts
+              id: f123fswse13
+              attributes:
+                value: []
+                areaHa: 10472.639768453402
+                downloadUrls:
+                  csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                  json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
           schema:
             $ref: '#/definitions/IMAZONALERTSAPI'
         404:
@@ -227,7 +227,7 @@ paths:
         - name: name
           in: path
           description: |
-            Concession type, one of  
+            Concession type, one of
             ```mining, oilpalm, fiber, logging```
           required: true
           type: string
@@ -241,7 +241,7 @@ paths:
         - name: period
           in: query
           description: |
-            Period of time 
+            Period of time
             ```2015-01-01,2016-12-01```
           required: true
           type: string
@@ -249,15 +249,15 @@ paths:
         200:
           description: Results obtained
           examples:
-              data: 
-                type: imazon-alerts
-                id: f123fswse13
-                attributes:
-                  value: 988
-                  areaHa: 10472.639768453402
-                  downloadUrls:
-                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
-                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
+            data:
+              type: imazon-alerts
+              id: f123fswse13
+              attributes:
+                value: 988
+                areaHa: 10472.639768453402
+                downloadUrls:
+                  csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                  json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
           schema:
             $ref: '#/definitions/IMAZONALERTSAPI'
         404:
@@ -293,7 +293,7 @@ paths:
         - name: period
           in: query
           description: |
-            Period of time 
+            Period of time
             ```2015-01-01,2016-12-01```
           required: true
           type: string
@@ -302,15 +302,15 @@ paths:
         200:
           description: Results obtained
           examples:
-              data: 
-                type: imazon-alerts
-                id: f123fswse13
-                attributes:
-                  value: 988
-                  areaHa: 10472.639768453402
-                  downloadUrls:
-                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
-                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
+            data:
+              type: imazon-alerts
+              id: f123fswse13
+              attributes:
+                value: 988
+                areaHa: 10472.639768453402
+                downloadUrls:
+                  csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                  json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
           schema:
             $ref: '#/definitions/IMAZONALERTSAPI'
         404:
@@ -339,14 +339,14 @@ paths:
         - name: iso
           in: path
           description: |
-            ISO-3 country code 
+            ISO-3 country code
             ``` BRA ```
           required: true
           type: string
         - name: period
           in: query
           description: |
-            Period of time 
+            Period of time
             ```2015-01-01,2016-12-01```
           required: true
           type: string
@@ -355,15 +355,15 @@ paths:
         200:
           description: Results obtained
           examples:
-              data: 
-                type: imazon-alerts
-                id: f123fswse13
-                attributes:
-                  value: 988
-                  areaHa: 10472.639768453402
-                  downloadUrls:
-                    csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
-                    json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
+            data:
+              type: imazon-alerts
+              id: f123fswse13
+              attributes:
+                value: 988
+                areaHa: 10472.639768453402
+                downloadUrls:
+                  csv: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=csv
+                  json: /download/274b4818-be18-4890-9d10-eae56d2a82e5?sql=select lat, lon, confidence, year, julian_day from index_b846230fcec0420892d13fc11ea7e32b where year = 2016 and julian_day >= 1 and julian_day <= 347&geostore=34cecd4c4809dbbec20ce40be3d1c877&format=json
           schema:
             $ref: '#/definitions/IMAZONALERTSAPI'
         404:
@@ -392,21 +392,21 @@ paths:
         - name: iso
           in: path
           description: |
-            ISO-3 country code 
+            ISO-3 country code
             ``` BRA ```
           required: true
           type: string
         - name: id1
           in: path
           description: |
-            numeric code for admin 1 region code based on GADM 2 
+            numeric code for admin 1 region code based on GADM 2
             ``` 2 ```
           required: true
           type: integer
         - name: period
           in: query
           description: |
-            Period of time 
+            Period of time
             ```2015-01-01,2016-12-01```
           required: true
           type: string
@@ -428,7 +428,7 @@ paths:
           description: unexpected error
           schema:
             $ref: '#/definitions/Errors'
-            
+
   /imazon-alerts/latest:
     get:
       operationId: getLatest
@@ -510,9 +510,9 @@ definitions:
       meta:
         type: object
         description: A meta object containing non-standard meta-information about the error.
-#############################################################################
-#                            Models                                
-#############################################################################
+  #############################################################################
+  #                            Models
+  #############################################################################
 
   IMAZONLATESTAPI:
     type: object

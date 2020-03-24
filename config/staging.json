@@ -1,11 +1,11 @@
 {
-    "logger": {
-        "name": "gfw-imazon-alerts-api-STAGING",
-        "level": "info",
-        "toFile": false,
-        "dirLogFile": null
-    },
-    "service": {
-        "port": null
-    }
+  "logger": {
+    "name": "gfw-imazon-alerts-api-STAGING",
+    "level": "info",
+    "toFile": false,
+    "dirLogFile": null
+  },
+  "service": {
+    "port": null
+  }
 }
