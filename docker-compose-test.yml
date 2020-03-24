@@ -6,6 +6,9 @@ services:
       - "3600"
     container_name: gfw-imazon-alerts-api-test
     environment:
+      CT_URL: http://mymachine:9000
+      API_VERSION: v1
+      CT_REGISTER_MODE: auto
       PORT: 3600
       NODE_PATH: app/src
       NODE_ENV: test
