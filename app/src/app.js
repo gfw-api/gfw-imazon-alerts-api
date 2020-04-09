@@ -1,19 +1,19 @@
-'use strict';
-//load modules
-var config = require('config');
-var logger = require('logger');
-var path = require('path');
-var koa = require('koa');
-var bodyParser = require('koa-bodyparser');
-var koaLogger = require('koa-logger');
-var loader = require('loader');
-var validate = require('koa-validate');
-var ErrorSerializer = require('serializers/errorSerializer');
+const config = require('config');
+const logger = require('logger');
+const path = require('path');
+const koa = require('koa');
+const bodyParser = require('koa-bodyparser');
+const koaLogger = require('koa-logger');
+const loader = require('loader');
+const validate = require('koa-validate');
+const convert = require('koa-convert');
+const koaSimpleHealthCheck = require('koa-simple-healthcheck');
+const ErrorSerializer = require('serializers/errorSerializer');
 
 // instance of koa
-var app = koa();
+const app = koa();
 
-//if environment is dev then load koa-logger
+// if environment is dev then load koa-logger
 if (process.env.NODE_ENV === 'dev') {
     app.use(koaLogger());
 }
@@ -22,14 +22,26 @@ app.use(bodyParser({
     jsonLimit: '50mb'
 }));
 
-//catch errors and send in jsonapi standard. Always return vnd.api+json
-app.use(function*(next) {
+// catch errors and send in jsonapi standard. Always return vnd.api+json
+app.use(function* handleErrors(next) {
     try {
         yield next;
-    } catch (err) {
-        logger.error(err);
-        this.status = err.status || 500;
-        this.body = ErrorSerializer.serializeError(this.status, err.message);
+    } catch (inErr) {
+        let error = inErr;
+        try {
+            error = JSON.parse(inErr);
+        } catch (e) {
+            logger.debug('Could not parse error message - is it JSON?: ', inErr);
+            error = inErr;
+        }
+        this.status = error.status || this.status || 500;
+        if (this.status >= 500) {
+            logger.error(error);
+        } else {
+            logger.info(error);
+        }
+
+        this.body = ErrorSerializer.serializeError(this.status, error.message);
         if (process.env.NODE_ENV === 'prod' && this.status === 500) {
             this.body = 'Unexpected error';
         }
@@ -37,12 +49,12 @@ app.use(function*(next) {
     this.response.type = 'application/vnd.api+json';
 });
 
-var cache = require('lru-cache')({
+const cache = require('lru-cache')({
     maxAge: 24 * 60 * 60 * 10000 // 24h
 });
 
 app.use(require('koa-cash')({
-    get(key, maxAge) {
+    get(key) {
         logger.debug('Getting the cache key: %s', key);
         return cache.get(key);
     },
@@ -52,20 +64,21 @@ app.use(require('koa-cash')({
     }
 }));
 
-//load custom validator
+// load custom validator
 app.use(validate());
+app.use(convert.back(koaSimpleHealthCheck()));
 
-//load routes
+// load routes
 loader.loadRoutes(app);
 
-//Instance of http module
-var server = require('http').Server(app.callback());
+// Instance of http module
+const appServer = require('http').Server(app.callback());
 
 // get port of environment, if not exist obtain of the config.
 // In production environment, the port must be declared in environment variable
-var port = process.env.PORT || config.get('service.port');
+const port = process.env.PORT || config.get('service.port');
 
-server.listen(port, function () {
+const server = appServer.listen(port, () => {
     const microserviceClient = require('vizz.microservice-client');
 
     microserviceClient.register({
@@ -73,15 +86,19 @@ server.listen(port, function () {
         name: config.get('service.name'),
         dirConfig: path.join(__dirname, '../microservice'),
         dirPackage: path.join(__dirname, '../../'),
-        logger: logger,
-        app: app
+        logger,
+        app
     });
     if (process.env.CT_REGISTER_MODE && process.env.CT_REGISTER_MODE === 'auto') {
-        microserviceClient.autoDiscovery(config.get('service.name')).then(() => {}, (err) => {
-            logger.error('Error registering');
+        microserviceClient.autoDiscovery(config.get('service.name')).then(() => {
+        }, (err) => {
+            logger.error(`Error registering`);
+            logger.error(err);
             process.exit(1);
         });
     }
 });
 
-logger.info('Server started in port:' + port);
+logger.info(`Server started in port:${port}`);
+
+module.exports = server;

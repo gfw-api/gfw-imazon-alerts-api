@@ -1,13 +1,11 @@
-'use strict';
+const JSONAPISerializer = require('jsonapi-serializer').Serializer;
 
-var logger = require('logger');
-var JSONAPISerializer = require('jsonapi-serializer').Serializer;
-var imazonAlertsSerializer = new JSONAPISerializer('imazon-alerts', {
-    attributes: ['value','downloadUrls', 'area_ha'],
-    typeForAttribute: function (attribute, record) {
+const imazonAlertsSerializer = new JSONAPISerializer('imazon-alerts', {
+    attributes: ['value', 'downloadUrls', 'area_ha'],
+    typeForAttribute(attribute) {
         return attribute;
     },
-    downloadUrls:{
+    downloadUrls: {
         attributes: ['csv', 'geojson', 'kml', 'shp', 'svg']
     },
     value: {
@@ -15,22 +13,23 @@ var imazonAlertsSerializer = new JSONAPISerializer('imazon-alerts', {
     },
     keyForAttribute: 'camelCase'
 });
-var imazonLatestSerializer = new JSONAPISerializer('imazon-latest', {
+const imazonLatestSerializer = new JSONAPISerializer('imazon-latest', {
     attributes: ['date'],
-    typeForAttribute: function (attribute, record) {
+    typeForAttribute(attribute) {
         return attribute;
     }
 });
 
 class ImazonAlertsSerializer {
 
-  static serialize(data) {
-    return imazonAlertsSerializer.serialize(data);
-  }
+    static serialize(data) {
+        return imazonAlertsSerializer.serialize(data);
+    }
 
-  static serializeLatest(data) {
-    return imazonLatestSerializer.serialize(data);
-  }
+    static serializeLatest(data) {
+        return imazonLatestSerializer.serialize(data);
+    }
+
 }
 
 module.exports = ImazonAlertsSerializer;
