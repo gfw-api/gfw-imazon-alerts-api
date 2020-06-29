@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/gfw-api/gfw-imazon-alerts-api#readme",
   "dependencies": {
-    "bunyan": "1.7.1",
+    "bunyan": "1.8.14",
     "cartodb": "0.4.0",
     "co": "4.6.0",
     "co-request": "1.0.0",
