@@ -12,4 +12,7 @@ services:
       PORT: 3600
       NODE_PATH: app/src
       NODE_ENV: test
+      CT_TOKEN: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Im1pY3Jvc2VydmljZSIsImNyZWF0ZWRBdCI6IjIwMTYtMDktMTQifQ.IRCIRm1nfIQTfda_Wb6Pg-341zhV8soAgzw7dd5HxxQ
+      LOCAL_URL: http://127.0.0.1:3600
+      FASTLY_ENABLED: "false"
     command: test
