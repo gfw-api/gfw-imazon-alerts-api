@@ -1,6 +1,6 @@
 # GFW Imazon Alerts API
 
-[![Build Status](https://travis-ci.org/gfw-api/gfw-imazon-alerts-api.svg?branch=develop)](https://travis-ci.org/gfw-api/gfw-imazon-alerts-api)
+[![Build Status](https://travis-ci.com/gfw-api/gfw-imazon-alerts-api.svg?branch=dev)](https://travis-ci.com/gfw-api/gfw-imazon-alerts-api)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/7c1d35d3f2ddb21fa6a4/test_coverage)](https://codeclimate.com/github/gfw-api/gfw-imazon-alerts-api/test_coverage)
 
 This repository is the microservice that it implement the imazon alerts funcionality and exposed the /imazon-alerts endpoints in the api-gateway
