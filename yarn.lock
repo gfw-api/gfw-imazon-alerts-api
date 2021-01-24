@@ -927,10 +927,10 @@ co-body@~3.1.0:
     raw-body "~2.1.2"
     type-is "~1.6.6"
 
-co-mocha@1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/co-mocha/-/co-mocha-1.1.2.tgz#cb8e8e6963faeab3a923584cdee8e17c03d4d44a"
-  integrity sha1-y46OaWP66rOpI1hM3ujhfAPU1Eo=
+co-mocha@1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/co-mocha/-/co-mocha-1.2.2.tgz#c4fdf24d37f43ca4da668b14542a96e9377479ab"
+  integrity sha512-ocdJRn3sxonOqpdjSU2VwTwWzjTSoatzsTqCWiC3eGvJFNs8ZNMlZwfgYolQCdfddMz4muiZl99KIV9gKoNvxg==
   dependencies:
     co "^4.0.0"
     is-generator "^1.0.1"
