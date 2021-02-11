@@ -52,7 +52,7 @@
     "koa-validate": "0.2.11",
     "lru-cache": "4.0.1",
     "mustache": "2.2.1",
-    "rw-api-microservice-node": "^3.2.1"
+    "rw-api-microservice-node": "^3.3.0"
   },
   "devDependencies": {
     "co-mocha": "1.2.2",
