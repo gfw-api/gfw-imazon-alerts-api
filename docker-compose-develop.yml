@@ -3,17 +3,17 @@ services:
   develop:
     build: .
     ports:
-      - "3600:3600"
+      - "3604:3604"
     container_name: gfw-imazon-alerts-api-develop
     environment:
-      PORT: 3600
+      PORT: 3604
       NODE_PATH: app/src
       CT_REGISTER_MODE: auto
       NODE_ENV: dev
       CARTODB_USER: wri-01
       API_GATEWAY_URL: http://mymachine:9000
       CT_URL: http://mymachine:9000
-      LOCAL_URL: http://mymachine:3600
+      LOCAL_URL: http://mymachine:3604
       API_VERSION: v1
       CT_TOKEN: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Im1pY3Jvc2VydmljZSIsImNyZWF0ZWRBdCI6IjIwMTYtMDktMTQifQ.IRCIRm1nfIQTfda_Wb6Pg-341zhV8soAgzw7dd5HxxQ
       FASTLY_ENABLED: "false"
