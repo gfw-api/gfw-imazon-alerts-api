@@ -1,16 +1,18 @@
-const logger = require('logger');
-const config = require('config');
-const CartoDB = require('cartodb');
-const Mustache = require('mustache');
-const NotFound = require('errors/notFound');
-const GeostoreService = require('services/geostoreService');
+import config from 'config';
+import logger from 'logger';
+import Mustache from 'mustache';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import CartoDB from 'cartodb';
+import GeostoreService from 'services/geostoreService';
+import NotFound from "errors/notFound";
 
-const WORLD = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopology(ST_SetSRID(ST_MakeValid(ST_GeomFromGeoJSON('{{{geojson}}}')), 4326), 0.01), 3857) geojson)
+const WORLD: string = `WITH poly AS (SELECT * FROM ST_Transform(ST_SimplifyPreserveTopology(ST_SetSRID(ST_MakeValid(ST_GeomFromGeoJSON('{{{geojson}}}')), 4326), 0.01), 3857) geojson)
              SELECT data_type, count(*) AS value
              FROM imazon_sad i, poly        WHERE i.date >= '{{begin}}'::date
                AND i.date <= '{{end}}'::date  and st_intersects(poly.geojson, i.the_geom_webmercator) group by data_type `;
 
-const ISO = `
+const ISO: string = `
         with p as (SELECT the_geom_webmercator FROM gadm2_countries_simple WHERE iso = UPPER('{{iso}}'))
         SELECT data_type,
             sum(ST_Area(i.the_geom_webmercator)/(100*100)) AS value
@@ -20,14 +22,14 @@ const ISO = `
             AND i.date <= '{{end}}'::date
         GROUP BY data_type `;
 
-const ID1 = `with p as (SELECT the_geom_webmercator FROM gadm2_provinces_simple WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}})
+const ID1: string = `with p as (SELECT the_geom_webmercator FROM gadm2_provinces_simple WHERE iso = UPPER('{{iso}}') AND id_1 = {{id1}})
         SELECT data_type, SUM(ST_Area( ST_Intersection( i.the_geom_webmercator, p.the_geom_webmercator))/(10000)) AS value
         FROM imazon_sad i right join p on st_intersects(i.the_geom_webmercator, p.the_geom_webmercator)
         and i.date >= '{{begin}}'::date
         AND i.date <= '{{end}}'::date
         GROUP BY data_type`;
 
-const USE = `SELECT data_type, SUM(ST_Area(ST_Intersection(
+const USE: string = `SELECT data_type, SUM(ST_Area(ST_Intersection(
                 i.the_geom_webmercator,
                 p.the_geom_webmercator))/(10000)) AS value
                {{additionalSelect}}
@@ -40,7 +42,7 @@ const USE = `SELECT data_type, SUM(ST_Area(ST_Intersection(
             where p.cartodb_id = {{pid}}
         GROUP BY data_type`;
 
-const WDPA = `WITH  p as ( SELECT
+const WDPA: string = `WITH  p as ( SELECT
             CASE WHEN marine::numeric = 2
              THEN null
             WHEN ST_NPoints(the_geom_webmercator)<=18000 THEN the_geom_webmercator
@@ -61,41 +63,44 @@ const WDPA = `WITH  p as ( SELECT
                         AND i.date <= '{{end}}'::date
             GROUP BY data_type`;
 
-const LATEST = `SELECT DISTINCT date
+const LATEST: string = `SELECT DISTINCT date
         FROM imazon_sad
         WHERE date IS NOT NULL
         ORDER BY date DESC
         LIMIT {{limit}}`;
 
-const MIN_MAX_DATE_SQL = ', MIN(date) as min_date, MAX(date) as max_date ';
+const MIN_MAX_DATE_SQL: string = ', MIN(date) as min_date, MAX(date) as max_date ';
 
-const executeThunk = (client, sql, params) => (callback) => {
-    logger.info(Mustache.render(sql, params));
-    client.execute(sql, params).done((data) => {
-        callback(null, data);
-    }).error((err) => {
-        callback(err, null);
+const executeThunk = async (client: CartoDB.SQL, sql: string, params: any): Promise<Record<string, any>> => (new Promise((resolve: (value: (PromiseLike<unknown> | unknown)) => void, reject: (reason?: any) => void) => {
+    logger.debug(Mustache.render(sql, params));
+    client.execute(sql, params).done((data: Record<string, any>) => {
+        resolve(data);
+    }).error((error: Error) => {
+        reject(error);
     });
-};
+}));
 
-const getToday = () => {
-    const today = new Date();
+const getToday = (): string => {
+    const today: Date = new Date();
     return `${today.getFullYear().toString()}-${(today.getMonth() + 1).toString()}-${today.getDate().toString()}`;
 };
 
-const getYesterday = () => {
-    const yesterday = new Date(Date.now() - (24 * 60 * 60 * 1000));
+const getYesterday = (): string => {
+    const yesterday: Date = new Date(Date.now() - (24 * 60 * 60 * 1000));
     return `${yesterday.getFullYear().toString()}-${(yesterday.getMonth() + 1).toString()}-${yesterday.getDate().toString()}`;
 };
 
 
-const defaultDate = () => {
-    const to = getToday();
-    const from = getYesterday();
+const defaultDate = (): string => {
+    const to: string = getToday();
+    const from: string = getYesterday();
     return `${from},${to}`;
 };
 
 class CartoDBService {
+
+    client: CartoDB.SQL;
+    apiUrl: string;
 
     constructor() {
         this.client = new CartoDB.SQL({
@@ -104,17 +109,16 @@ class CartoDBService {
         this.apiUrl = config.get('cartoDB.apiUrl');
     }
 
-    // eslint-disable-next-line consistent-return
-    getDownloadUrls(query, params) {
+    getDownloadUrls(query: string, params: Record<string, any>): Record<string, any> | void {
         try {
-            const formats = ['csv', 'geojson', 'kml', 'shp', 'svg'];
-            const download = {};
-            let queryFinal = Mustache.render(query, params);
+            const formats: string[] = ['csv', 'geojson', 'kml', 'shp', 'svg'];
+            const download: Record<string, any> = {};
+            let queryFinal: string = Mustache.render(query, params);
             queryFinal = queryFinal.replace(MIN_MAX_DATE_SQL, '');
             queryFinal = queryFinal.replace('SELECT data_type,', 'SELECT i.data_type, i.the_geom,');
             queryFinal = queryFinal.replace('GROUP BY data_type', 'GROUP BY data_type, i.the_geom');
             queryFinal = encodeURIComponent(queryFinal);
-            for (let i = 0, { length } = formats; i < length; i++) {
+            for (let i: number = 0, { length } = formats; i < length; i++) {
                 download[formats[i]] = `${this.apiUrl}?q=${queryFinal}&format=${formats[i]}`;
             }
             return download;
@@ -123,11 +127,10 @@ class CartoDBService {
         }
     }
 
-
-    * getNational(iso, alertQuery, period = defaultDate()) {
+    async getNational(iso: string, alertQuery: string, period: string = defaultDate(), apiKey: string): Promise<Record<string, any>> {
         logger.debug('Obtaining national of iso %s', iso);
-        const periods = period.split(',');
-        const params = {
+        const periods: string[] = period.split(',');
+        const params: Record<string, any> = {
             iso,
             begin: periods[0],
             end: periods[1]
@@ -135,12 +138,12 @@ class CartoDBService {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        const geostore = yield GeostoreService.getGeostoreByIso(iso);
+        const geostore: Record<string, any> = await GeostoreService.getGeostoreByIso(iso, apiKey);
         if (geostore) {
             if (iso === 'BRA') {
-                const data = yield executeThunk(this.client, ISO, params);
+                const data: Record<string, any> = await executeThunk(this.client, ISO, params);
                 if (data.rows) {
-                    const result = {
+                    const result: Record<string, any> = {
                         value: data.rows
                     };
                     result.area_ha = geostore.areaHa;
@@ -161,10 +164,10 @@ class CartoDBService {
         return null;
     }
 
-    * getSubnational(iso, id1, alertQuery, period = defaultDate()) {
+    async getSubnational(iso: string, id1: string, alertQuery: string, period: string = defaultDate(), apiKey: string): Promise<Record<string, any>> {
         logger.debug('Obtaining subnational of iso %s and id1', iso, id1);
-        const periods = period.split(',');
-        const params = {
+        const periods: string[] = period.split(',');
+        const params: Record<string, any> = {
             iso,
             id1,
             begin: periods[0],
@@ -174,12 +177,12 @@ class CartoDBService {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
 
-        const geostore = yield GeostoreService.getGeostoreByIsoAndId(iso, id1);
+        const geostore: Record<string, any> = await GeostoreService.getGeostoreByIsoAndId(iso, id1, apiKey);
         if (geostore) {
             if (iso === 'BRA') {
-                const data = yield executeThunk(this.client, ID1, params);
+                const data: Record<string, any> = await executeThunk(this.client, ID1, params);
                 if (data.rows) {
-                    const result = {
+                    const result: Record<string, any> = {
                         value: data.rows
                     };
                     result.area_ha = geostore.areaHa;
@@ -201,10 +204,10 @@ class CartoDBService {
         return null;
     }
 
-    * getUse(useName, useTable, id, alertQuery, period = defaultDate()) {
+    async getUse(useName: string, useTable: string, id: string, alertQuery: string, period: string = defaultDate(), apiKey: string): Promise<Record<string, any>> {
         logger.debug('Obtaining use with id %s', id);
-        const periods = period.split(',');
-        const params = {
+        const periods: string[] = period.split(',');
+        const params: Record<string, any> = {
             useTable,
             pid: id,
             begin: periods[0],
@@ -214,11 +217,11 @@ class CartoDBService {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
 
-        const geostore = yield GeostoreService.getGeostoreByUse(useName, id);
-        const data = yield executeThunk(this.client, USE, params);
+        const geostore: Record<string, any> = await GeostoreService.getGeostoreByUse(useName, id, apiKey);
+        const data: Record<string, any> = await executeThunk(this.client, USE, params);
         if (geostore) {
             if (data.rows && data.rows.length > 0 && data.rows[0].data_type !== null) {
-                const result = {
+                const result: Record<string, any> = {
                     value: data.rows
                 };
                 result.area_ha = geostore.areaHa;
@@ -234,10 +237,10 @@ class CartoDBService {
         return null;
     }
 
-    * getWdpa(wdpaid, alertQuery, period = defaultDate()) {
+    async getWdpa(wdpaid: string, alertQuery: string, period: string = defaultDate(), apiKey: string): Promise<Record<string, any>> {
         logger.debug('Obtaining wpda of id %s', wdpaid);
-        const periods = period.split(',');
-        const params = {
+        const periods: string[] = period.split(',');
+        const params: Record<string, any> = {
             wdpaid,
             begin: periods[0],
             end: periods[1]
@@ -245,11 +248,11 @@ class CartoDBService {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        const geostore = yield GeostoreService.getGeostoreByWdpa(wdpaid);
-        const data = yield executeThunk(this.client, WDPA, params);
+        const geostore: Record<string, any> = await GeostoreService.getGeostoreByWdpa(wdpaid, apiKey);
+        const data: Record<string, any> = await executeThunk(this.client, WDPA, params);
         if (geostore) {
             if (data.rows) {
-                const result = {
+                const result: Record<string, any> = {
                     value: data.rows
                 };
                 result.area_ha = geostore.areaHa;
@@ -265,14 +268,14 @@ class CartoDBService {
         return null;
     }
 
-    * getWorld(hashGeoStore, alertQuery, period = defaultDate()) {
+    async getWorld(hashGeoStore: string, alertQuery: string, period: string = defaultDate(), apiKey: string): Promise<Record<string, any>> {
         logger.debug('Obtaining world with hashGeoStore %s', hashGeoStore);
 
-        const geostore = yield GeostoreService.getGeostoreByHash(hashGeoStore);
+        const geostore: Record<string, any> = await GeostoreService.getGeostoreByHash(hashGeoStore, apiKey);
         if (geostore && geostore.geojson) {
             logger.debug('Executing query in cartodb with geojson', geostore.geojson);
-            const periods = period.split(',');
-            const params = {
+            const periods: string[] = period.split(',');
+            const params: Record<string, any> = {
                 geojson: JSON.stringify(geostore.geojson.features[0].geometry),
                 begin: periods[0],
                 end: periods[1]
@@ -280,9 +283,9 @@ class CartoDBService {
             if (alertQuery) {
                 params.additionalSelect = MIN_MAX_DATE_SQL;
             }
-            const data = yield executeThunk(this.client, WORLD, params);
+            const data: Record<string, any> = await executeThunk(this.client, WORLD, params);
             if (data.rows) {
-                const result = {
+                const result: Record<string, any> = {
                     value: data.rows
                 };
                 result.area_ha = geostore.areaHa;
@@ -294,10 +297,10 @@ class CartoDBService {
         throw new NotFound('Geostore not found');
     }
 
-    * getWorldWithGeojson(geojson, alertQuery, period = defaultDate()) {
+    async getWorldWithGeojson(geojson: Record<string, any>, alertQuery: string, period: string = defaultDate()): Promise<Record<string, any>> {
         logger.debug('Executing query in cartodb with geojson', geojson);
-        const periods = period.split(',');
-        const params = {
+        const periods: string[] = period.split(',');
+        const params: Record<string, any> = {
             geojson: JSON.stringify(geojson.features[0].geometry),
             begin: periods[0],
             end: periods[1]
@@ -305,9 +308,9 @@ class CartoDBService {
         if (alertQuery) {
             params.additionalSelect = MIN_MAX_DATE_SQL;
         }
-        const data = yield executeThunk(this.client, WORLD, params);
+        const data: Record<string, any> = await executeThunk(this.client, WORLD, params);
         if (data.rows) {
-            const result = {
+            const result: Record<string, any> = {
                 value: data.rows
             };
             if (data.rows.length > 0) {
@@ -319,20 +322,20 @@ class CartoDBService {
         return null;
     }
 
-    * latest(limit = 3) {
+    async latest(limit: string = "3"): Promise<Array<any> | void> {
         logger.debug('Obtaining latest with limit %s', limit);
-        const params = {
-            limit
+        const parsedLimit: number = parseInt(limit, 10);
+        const params: { limit: number } = {
+            limit: parsedLimit
         };
-        const data = yield executeThunk(this.client, LATEST, params);
+        const data: Record<string, any> = await executeThunk(this.client, LATEST, params);
         logger.debug('data', data);
         if (data.rows) {
-            const result = data.rows;
-            return result;
+            return data.rows;
         }
         return null;
     }
 
 }
 
-module.exports = new CartoDBService();
+export default new CartoDBService();

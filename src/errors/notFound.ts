@@ -1,6 +1,6 @@
 class NotFound extends Error {
 
-    constructor(message) {
+    constructor(message: string) {
         super(message);
         this.name = 'NotFound';
         this.message = message;
@@ -8,4 +8,4 @@ class NotFound extends Error {
 
 }
 
-module.exports = NotFound;
+export default NotFound;
