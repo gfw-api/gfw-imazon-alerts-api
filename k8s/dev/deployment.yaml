@@ -48,6 +48,11 @@ spec:
                 secretKeyRef:
                   key: GATEWAY_URL
                   name: mssecrets
+            - name: MICROSERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: MICROSERVICE_TOKEN
+                  name: mssecrets
             - name: CARTODB_USER
               valueFrom:
                 secretKeyRef:
