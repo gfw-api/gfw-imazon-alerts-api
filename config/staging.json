@@ -4,8 +4,5 @@
     "level": "info",
     "toFile": false,
     "dirLogFile": null
-  },
-  "service": {
-    "port": null
   }
 }
